@@ -1,0 +1,30 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Order;
+use App\Models\User;
+use App\Models\Warehouse;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<Order>
+ */
+class OrderFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'user_id' => User::factory(),
+            'warehouse_id' => Warehouse::factory(),
+            'status' => $this->faker->randomElement(['pending', 'processing', 'completed', 'cancelled']),
+            'total_amount' => 0, // Сумму будем пересчитывать на основе связанных OrderItem
+            'notes' => $this->faker->optional()->sentence(),
+        ];
+    }
+}

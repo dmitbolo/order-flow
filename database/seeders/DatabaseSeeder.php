@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Product;
 use App\Models\User;
+use App\Models\Warehouse;
+use App\Models\WarehouseProduct;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -21,5 +24,18 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        $warehouses = Warehouse::factory()->count(3)->create();
+        $products = Product::factory()->count(10)->create();
+
+        // Связываем каждый товар с каждым складом (с разной ценой и остатком)
+        foreach ($warehouses as $warehouse) {
+            foreach ($products as $product) {
+                WarehouseProduct::factory()->create([
+                    'warehouse_id' => $warehouse->id,
+                    'product_id' => $product->id,
+                ]);
+            }
+        }
     }
 }
