@@ -30,7 +30,8 @@ class Product extends Model
 
     public function warehouses(): BelongsToMany
     {
-        return $this->belongsToMany(Warehouse::class)
+        return $this->belongsToMany(Warehouse::class, 'warehouse_product')
+        ->using(WarehouseProduct::class)
             ->withPivot('price', 'stock_quantity')
             ->withTimestamps();
     }

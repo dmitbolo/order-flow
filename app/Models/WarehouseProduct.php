@@ -4,8 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class WarehouseProduct extends Model
+class WarehouseProduct extends Pivot
 {
     /** @use HasFactory<\Database\Factories\WarehouseProductFactory> */
     use HasFactory;
