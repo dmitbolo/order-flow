@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Exceptions;
+
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\AuthenticationException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Throwable;
+
+class ApiExceptionHandler
+{
+    /**
+     * Регистрирует все кастомные обработчики для API.
+     */
+    public static function configure(Exceptions $exceptions): void
+    {
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request) => $request->is('api/*'),
+        );
+
+        self::registerNotFoundHandler($exceptions);
+        self::registerValidationHandler($exceptions);
+        self::registerAuthHandlers($exceptions);
+        self::registerFallbackHandler($exceptions);
+    }
+
+    private static function registerNotFoundHandler(Exceptions $exceptions): void
+    {
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if (!$request->is('api/*')) return null;
+
+            if ($e->getPrevious() instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                return response()->json(['status' => 'error', 'message' => 'Запрашиваемая запись не найдена.'], Response::HTTP_NOT_FOUND);
+            }
+            return response()->json(['status' => 'error', 'message' => 'Маршрут не найден.'], Response::HTTP_NOT_FOUND);
+        });
+    }
+
+    private static function registerValidationHandler(Exceptions $exceptions): void
+    {
+        $exceptions->render(function (ValidationException $e, Request $request) {
+            if (!$request->is('api/*')) return null;
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Переданные данные не прошли валидацию.',
+                'errors' => $e->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        });
+    }
+
+    private static function registerAuthHandlers(Exceptions $exceptions): void
+    {
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if (!$request->is('api/*')) return null;
+
+            return response()->json(['status' => 'error', 'message' => 'Необходима авторизация.'], Response::HTTP_UNAUTHORIZED);
+        });
+
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
+            if (!$request->is('api/*')) return null;
+
+            return response()->json(['status' => 'error', 'message' => 'Доступ запрещен.'], Response::HTTP_FORBIDDEN);
+        });
+    }
+
+    private static function registerFallbackHandler(Exceptions $exceptions): void
+    {
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (!$request->is('api/*') || config('app.debug')) return null;
+
+            return response()->json(['status' => 'error', 'message' => 'На сервере произошла ошибка.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        });
+    }
+}
