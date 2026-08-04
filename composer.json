@@ -10,11 +10,12 @@
         "filament/filament": "^5.7",
         "laravel/framework": "^13.8",
         "laravel/horizon": "^5.48",
-        "laravel/sanctum": "^4.3",
+        "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "spatie/laravel-query-builder": "^7.3"
     },
     "require-dev": {
+        "barryvdh/laravel-ide-helper": "^3.7",
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
@@ -23,6 +24,8 @@
         "laravel/telescope": "^5.20",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
+        "pestphp/pest": "^4.7",
+        "pestphp/pest-plugin-laravel": "^4.1",
         "phpunit/phpunit": "^12.5.12"
     },
     "autoload": {
@@ -86,6 +89,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "ext-pcntl": "8.4"
         }
     },
     "minimum-stability": "stable",
