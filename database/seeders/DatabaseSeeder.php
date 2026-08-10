@@ -28,7 +28,6 @@ class DatabaseSeeder extends Seeder
         $warehouses = Warehouse::factory()->count(3)->create();
         $products = Product::factory()->count(10)->create();
 
-        // Связываем каждый товар с каждым складом (с разной ценой и остатком)
         foreach ($warehouses as $warehouse) {
             foreach ($products as $product) {
                 WarehouseProduct::factory()->create([

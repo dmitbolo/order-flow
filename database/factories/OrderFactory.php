@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -22,7 +23,7 @@ class OrderFactory extends Factory
         return [
             'user_id' => User::factory(),
             'warehouse_id' => Warehouse::factory(),
-            'status' => $this->faker->randomElement(['pending', 'processing', 'completed', 'cancelled']),
+            'status' => $this->faker->randomElement([OrderStatus::Pending, OrderStatus::Canceled, OrderStatus::Completed, OrderStatus::Processing]),
             'total_amount' => 0, // Сумму будем пересчитывать на основе связанных OrderItem
             'notes' => $this->faker->optional()->sentence(),
         ];
