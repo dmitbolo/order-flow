@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('warehouse_id')->constrained()->restrictOnDelete(); // Склад, с которого оформлен заказ
-            $table->string('status')->default('pending');
+            $table->enum('status', array_column(\App\Enums\OrderStatus::cases(), 'value'))->default(\App\Enums\OrderStatus::Pending->value);
             $table->unsignedInteger('total_amount')->default(0);
             $table->text('notes')->nullable();
             $table->timestamps();

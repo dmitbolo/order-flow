@@ -26,6 +26,7 @@ class ApiExceptionHandler
         self::registerValidationHandler($exceptions);
         self::registerAuthHandlers($exceptions);
         self::registerFallbackHandler($exceptions);
+        self::registerAppExceptionHandler($exceptions);
     }
 
     private static function registerNotFoundHandler(Exceptions $exceptions): void
@@ -34,9 +35,17 @@ class ApiExceptionHandler
             if (!$request->is('api/*')) return null;
 
             if ($e->getPrevious() instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
-                return response()->json(['status' => 'error', 'message' => 'Запрашиваемая запись не найдена.'], Response::HTTP_NOT_FOUND);
+                return response()->json([
+                    'status' => 'error',
+                    'error_code' => 'RESOURCE_NOT_FOUND',
+                    'message' => 'Запрашиваемая запись не найдена.'
+                ], Response::HTTP_NOT_FOUND);
             }
-            return response()->json(['status' => 'error', 'message' => 'Маршрут не найден.'], Response::HTTP_NOT_FOUND);
+            return response()->json([
+                'status' => 'error',
+                'error_code' => 'ROUTE_NOT_FOUND',
+                'message' => 'Маршрут не найден.'
+            ], Response::HTTP_NOT_FOUND);
         });
     }
 
@@ -47,6 +56,7 @@ class ApiExceptionHandler
 
             return response()->json([
                 'status' => 'error',
+                'error_code' => 'VALIDATION_ERROR',
                 'message' => 'Переданные данные не прошли валидацию.',
                 'errors' => $e->errors(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -58,13 +68,21 @@ class ApiExceptionHandler
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if (!$request->is('api/*')) return null;
 
-            return response()->json(['status' => 'error', 'message' => 'Необходима авторизация.'], Response::HTTP_UNAUTHORIZED);
+            return response()->json([
+                'status' => 'error',
+                'error_code' => 'UNAUTHENTICATED',
+                'message' => 'Необходима авторизация.'
+            ], Response::HTTP_UNAUTHORIZED);
         });
 
         $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
             if (!$request->is('api/*')) return null;
 
-            return response()->json(['status' => 'error', 'message' => 'Доступ запрещен.'], Response::HTTP_FORBIDDEN);
+            return response()->json([
+                'status' => 'error',
+                'error_code' => 'ACCESS_DENIED',
+                'message' => 'Доступ запрещен.'
+            ], Response::HTTP_FORBIDDEN);
         });
     }
 
@@ -73,7 +91,24 @@ class ApiExceptionHandler
         $exceptions->render(function (Throwable $e, Request $request) {
             if (!$request->is('api/*') || config('app.debug')) return null;
 
-            return response()->json(['status' => 'error', 'message' => 'На сервере произошла ошибка.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json([
+                'status' => 'error',
+                'error_code' => 'INTERNAL_SERVER_ERROR',
+                'message' => 'На сервере произошла ошибка.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        });
+    }
+
+    private static function registerAppExceptionHandler(Exceptions $exceptions): void
+    {
+        $exceptions->render(function (AppException $e, Request $request) {
+            if (!$request->is('api/*')) return null;
+
+            return response()->json([
+                'status' => 'error',
+                'error_code' => $e->errorCode,
+                'message' => $e->errorMessage,
+            ], $e->statusCode);
         });
     }
 }
