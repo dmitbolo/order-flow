@@ -2,13 +2,14 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Auth\AuthenticationException;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
 class ApiExceptionHandler
@@ -32,19 +33,22 @@ class ApiExceptionHandler
     private static function registerNotFoundHandler(Exceptions $exceptions): void
     {
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
-            if (!$request->is('api/*')) return null;
+            if (! $request->is('api/*')) {
+                return null;
+            }
 
-            if ($e->getPrevious() instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+            if ($e->getPrevious() instanceof ModelNotFoundException) {
                 return response()->json([
                     'status' => 'error',
                     'error_code' => 'RESOURCE_NOT_FOUND',
-                    'message' => 'Запрашиваемая запись не найдена.'
+                    'message' => 'Запрашиваемая запись не найдена.',
                 ], Response::HTTP_NOT_FOUND);
             }
+
             return response()->json([
                 'status' => 'error',
                 'error_code' => 'ROUTE_NOT_FOUND',
-                'message' => 'Маршрут не найден.'
+                'message' => 'Маршрут не найден.',
             ], Response::HTTP_NOT_FOUND);
         });
     }
@@ -52,7 +56,9 @@ class ApiExceptionHandler
     private static function registerValidationHandler(Exceptions $exceptions): void
     {
         $exceptions->render(function (ValidationException $e, Request $request) {
-            if (!$request->is('api/*')) return null;
+            if (! $request->is('api/*')) {
+                return null;
+            }
 
             return response()->json([
                 'status' => 'error',
@@ -66,22 +72,26 @@ class ApiExceptionHandler
     private static function registerAuthHandlers(Exceptions $exceptions): void
     {
         $exceptions->render(function (AuthenticationException $e, Request $request) {
-            if (!$request->is('api/*')) return null;
+            if (! $request->is('api/*')) {
+                return null;
+            }
 
             return response()->json([
                 'status' => 'error',
                 'error_code' => 'UNAUTHENTICATED',
-                'message' => 'Необходима авторизация.'
+                'message' => 'Необходима авторизация.',
             ], Response::HTTP_UNAUTHORIZED);
         });
 
         $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
-            if (!$request->is('api/*')) return null;
+            if (! $request->is('api/*')) {
+                return null;
+            }
 
             return response()->json([
                 'status' => 'error',
                 'error_code' => 'ACCESS_DENIED',
-                'message' => 'Доступ запрещен.'
+                'message' => 'Доступ запрещен.',
             ], Response::HTTP_FORBIDDEN);
         });
     }
@@ -89,12 +99,14 @@ class ApiExceptionHandler
     private static function registerFallbackHandler(Exceptions $exceptions): void
     {
         $exceptions->render(function (Throwable $e, Request $request) {
-            if (!$request->is('api/*') || config('app.debug')) return null;
+            if (! $request->is('api/*') || config('app.debug')) {
+                return null;
+            }
 
             return response()->json([
                 'status' => 'error',
                 'error_code' => 'INTERNAL_SERVER_ERROR',
-                'message' => 'На сервере произошла ошибка.'
+                'message' => 'На сервере произошла ошибка.',
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         });
     }
@@ -102,7 +114,9 @@ class ApiExceptionHandler
     private static function registerAppExceptionHandler(Exceptions $exceptions): void
     {
         $exceptions->render(function (AppException $e, Request $request) {
-            if (!$request->is('api/*')) return null;
+            if (! $request->is('api/*')) {
+                return null;
+            }
 
             return response()->json([
                 'status' => 'error',

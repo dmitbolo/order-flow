@@ -4,10 +4,12 @@ namespace App\Models;
 
 use App\Exceptions\Warehouses\InsufficientStockException;
 use App\Exceptions\Warehouses\ProductNotAttachedException;
+use Database\Factories\WarehouseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -17,13 +19,14 @@ use Illuminate\Support\Facades\DB;
  * @property string $code
  * @property string|null $address
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $orders
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read int|null $orders_count
- * @property-read \App\Models\WarehouseProduct|null $pivot
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
+ * @property-read WarehouseProduct|null $pivot
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
  * @property-read int|null $products_count
+ *
  * @method static \Database\Factories\WarehouseFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Warehouse newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Warehouse newQuery()
@@ -35,11 +38,12 @@ use Illuminate\Support\Facades\DB;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Warehouse whereIsActive($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Warehouse whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Warehouse whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Warehouse extends Model
 {
-    /** @use HasFactory<\Database\Factories\WarehouseFactory> */
+    /** @use HasFactory<WarehouseFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -67,8 +71,7 @@ class Warehouse extends Model
     }
 
     /**
-     * @param Collection<OrderItem> $items
-     * @return void
+     * @param  Collection<OrderItem>  $items
      */
     public function incrementProductStocks(Collection $items): void
     {
@@ -76,8 +79,9 @@ class Warehouse extends Model
     }
 
     /**
-     * @param array<int, int> $quantities [product_id => quantity]
+     * @param  array<int, int>  $quantities  [product_id => quantity]
      * @return array<int, float> [product_id => price]
+     *
      * @throws InsufficientStockException|ProductNotAttachedException
      */
     public function decrementProductStocks(array $quantities): array
@@ -96,9 +100,9 @@ class Warehouse extends Model
         $itemsForUpdate = [];
 
         foreach ($quantities as $productId => $quantity) {
-            $warehouseProduct  = $warehouseProducts->get($productId);
+            $warehouseProduct = $warehouseProducts->get($productId);
 
-            if (! $warehouseProduct ) {
+            if (! $warehouseProduct) {
                 throw new ProductNotAttachedException($productId);
             }
 
@@ -112,9 +116,9 @@ class Warehouse extends Model
 
             $prices[$productId] = $warehouseProduct->price;
 
-            $itemsForUpdate[] = (object)[
+            $itemsForUpdate[] = (object) [
                 'product_id' => $productId,
-                'quantity' => $quantity
+                'quantity' => $quantity,
             ];
         }
 
@@ -125,10 +129,6 @@ class Warehouse extends Model
 
     /**
      * Execute a single optimized bulk UPDATE query instead of N individual queries.
-     *
-     * @param Collection $items
-     * @param string $operator
-     * @return void
      */
     private function updateProductStocks(Collection $items, string $operator): void
     {

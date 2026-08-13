@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Actions\Auth;
 
 use App\Models\User;
@@ -16,7 +15,7 @@ class LoginUserAction
     {
         $user = User::where('email', $email)->first();
 
-        if (!$user || !Hash::check($password, $user->password)) {
+        if (! $user || ! Hash::check($password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => 'Неверный логин или пароль',
             ]);

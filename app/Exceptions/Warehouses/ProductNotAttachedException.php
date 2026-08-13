@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 class ProductNotAttachedException extends AppException
 {
     public string $errorCode = 'PRODUCT_NOT_ATTACHED_TO_WAREHOUSE';
+
     public int $statusCode = Response::HTTP_UNPROCESSABLE_ENTITY;
 
     public function __construct(

@@ -7,9 +7,7 @@ use App\Http\Requests\Api\V1\CreateOrderRequest;
 readonly class CreateOrderData
 {
     /**
-     * @param int $warehouseId
-     * @param OrderItemData[] $items
-     * @param string|null $notes
+     * @param  OrderItemData[]  $items
      */
     public function __construct(
         public int $warehouseId,

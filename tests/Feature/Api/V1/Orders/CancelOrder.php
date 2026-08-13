@@ -54,7 +54,7 @@ it('successfully cancels a pending order via api', function () {
                 'warehouse',
                 'items',
                 'created_at',
-            ]
+            ],
         ]);
 
     expect($response->json('data.status'))->toBe(OrderStatus::Canceled->value);
@@ -126,7 +126,7 @@ it('rolls back database changes if an unexpected error occurs during cancellatio
     ]);
 
     Order::updating(function () {
-        throw new \RuntimeException('Simulated database crash');
+        throw new RuntimeException('Simulated database crash');
     });
 
     $response = $this->actingAs($this->user, 'sanctum')

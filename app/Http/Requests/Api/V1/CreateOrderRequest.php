@@ -17,7 +17,7 @@ class CreateOrderRequest extends FormRequest
             'warehouse_id' => ['required', 'integer', 'exists:warehouses,id'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ];
     }
@@ -29,6 +29,7 @@ class CreateOrderRequest extends FormRequest
             'warehouse_id.exists' => 'Указанный склад не существует.',
             'items.required' => 'Заказ должен содержать хотя бы один товар.',
             'items.*.product_id.required' => 'Идентификатор товара обязателен.',
+            'items.*.product_id.distinct' => 'Товары в списке не должны повторяться.',
             'items.*.product_id.exists' => 'Один из выбранных товаров не существует.',
             'items.*.quantity.min' => 'Количество товара должно быть не менее 1.',
         ];
