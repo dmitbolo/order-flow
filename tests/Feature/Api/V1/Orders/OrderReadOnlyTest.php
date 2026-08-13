@@ -112,6 +112,22 @@ test('it shows a specific order belonging to the user', function () {
         ->assertJsonPath('data.id', $this->pendingOrder->id);
 });
 
+test('a guest cannot list orders', function () {
+    $this->getJson('/api/v1/orders')->assertUnauthorized();
+});
+
+test('it normalizes a non-positive per_page parameter to one', function () {
+    $response = $this->actingAs($this->user)->getJson('/api/v1/orders?per_page=0');
+
+    $response->assertOk();
+    expect($response->json('meta.per_page'))->toBe(1);
+});
+
+test('it rejects unallowed filters and sorts', function () {
+    $this->actingAs($this->user)->getJson('/api/v1/orders?filter[user_id]=1')->assertBadRequest();
+    $this->actingAs($this->user)->getJson('/api/v1/orders?sort=user_id')->assertBadRequest();
+});
+
 test('it loads allowed includes for a single order', function () {
     $response = $this->actingAs($this->user)
         ->getJson("/api/v1/orders/{$this->pendingOrder->id}?include=warehouse");
@@ -143,4 +159,12 @@ test('it returns 404 when trying to view another users order', function () {
     // Так как используется findOrFail внутри области видимости user_id,
     // чужой заказ вернет честный 404 Not Found вместо 403, скрывая факт его существования
     $response->assertStatus(Response::HTTP_NOT_FOUND);
+});
+
+test('it returns 404 when an order does not exist', function () {
+    $this->actingAs($this->user)->getJson('/api/v1/orders/999999')->assertNotFound();
+});
+
+test('a guest cannot view an order', function () {
+    $this->getJson("/api/v1/orders/{$this->pendingOrder->id}")->assertUnauthorized();
 });

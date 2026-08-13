@@ -128,6 +128,43 @@ test('it fails validation when product is not attached to the warehouse', functi
         ]);
 });
 
+test('a guest cannot create an order', function () {
+    $this->postJson('/api/v1/orders', [
+        'warehouse_id' => $this->warehouse->id,
+        'items' => [['product_id' => $this->product1->id, 'quantity' => 1]],
+    ])->assertUnauthorized();
+});
+
+test('it rejects duplicate products and does not change stock', function () {
+    $response = $this->actingAs($this->user)->postJson('/api/v1/orders', [
+        'warehouse_id' => $this->warehouse->id,
+        'items' => [
+            ['product_id' => $this->product1->id, 'quantity' => 6],
+            ['product_id' => $this->product1->id, 'quantity' => 6],
+        ],
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['items.0.product_id', 'items.1.product_id']);
+
+    expect(Order::count())->toBe(0);
+    $this->assertDatabaseHas('warehouse_product', [
+        'warehouse_id' => $this->warehouse->id,
+        'product_id' => $this->product1->id,
+        'stock_quantity' => 10,
+    ]);
+});
+
+test('it validates referenced ids, item quantity, and notes length', function () {
+    $this->actingAs($this->user)->postJson('/api/v1/orders', [
+        'warehouse_id' => 999_999,
+        'notes' => str_repeat('a', 1001),
+        'items' => [['product_id' => 999_999, 'quantity' => 0]],
+    ])->assertUnprocessable()->assertJsonValidationErrors([
+        'warehouse_id', 'notes', 'items.0.product_id', 'items.0.quantity',
+    ]);
+});
+
 test('it fails when requested quantity exceeds stock availability', function () {
     $payload = [
         'warehouse_id' => $this->warehouse->id,

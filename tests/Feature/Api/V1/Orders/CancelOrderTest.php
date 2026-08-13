@@ -109,7 +109,27 @@ it('handles custom business exceptions and passes them through response', functi
     $response = $this->actingAs($this->user, 'sanctum')
         ->postJson("/api/v1/orders/{$order->id}/cancel");
 
-    $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+    $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        ->assertJsonPath('error_code', 'ORDER_CANNOT_BE_CANCELED');
+});
+
+it('cannot cancel an order that is already being processed or completed', function (OrderStatus $status) {
+    $order = Order::factory()->create([
+        'user_id' => $this->user->id,
+        'status' => $status,
+        'warehouse_id' => $this->warehouse->id,
+    ]);
+
+    $this->actingAs($this->user, 'sanctum')
+        ->postJson("/api/v1/orders/{$order->id}/cancel")
+        ->assertUnprocessable()
+        ->assertJsonPath('error_code', 'ORDER_CANNOT_BE_CANCELED');
+})->with([OrderStatus::Processing, OrderStatus::Completed]);
+
+it('returns 404 when cancelling an order that does not exist', function () {
+    $this->actingAs($this->user, 'sanctum')
+        ->postJson('/api/v1/orders/999999/cancel')
+        ->assertNotFound();
 });
 
 it('rolls back database changes if an unexpected error occurs during cancellation via HTTP', function () {

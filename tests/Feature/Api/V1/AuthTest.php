@@ -80,3 +80,26 @@ test('авторизованный пользователь может выйт�
 
     expect($this->user->tokens()->count())->toBe(0);
 });
+
+test('login does not reveal whether an email exists', function () {
+    $this->postJson('/api/v1/login', [
+        'email' => 'missing@example.com',
+        'password' => 'password123',
+    ])->assertUnprocessable()->assertJsonValidationErrors(['email']);
+});
+
+test('a token issued at login grants access and is revoked at logout', function () {
+    $token = $this->postJson('/api/v1/login', [
+        'email' => $this->user->email,
+        'password' => 'password123',
+    ])->json('access_token');
+
+    $this->withToken($token)->getJson('/api/v1/me')->assertOk();
+    $this->withToken($token)->postJson('/api/v1/logout')->assertOk();
+
+    expect($this->user->tokens()->count())->toBe(0);
+});
+
+test('a guest cannot log out', function () {
+    $this->postJson('/api/v1/logout')->assertUnauthorized();
+});
