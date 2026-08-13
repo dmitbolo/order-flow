@@ -66,14 +66,4 @@ class Product extends Model
             ->withPivot('price', 'stock_quantity')
             ->withTimestamps();
     }
-
-    /**
-     * Scope для поиска по началу текстового поля
-     */
-    public function scopeSearchStartsBy($query, string $column, ?string $value)
-    {
-        return $query->when($value, function ($q) use ($column, $value) {
-            $q->where($column, 'LIKE', "{$value}%");
-        });
-    }
 }
