@@ -18,7 +18,7 @@ class WarehouseFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => 'Склад ' . $this->faker->city(),
+            'name' => 'Склад '.$this->faker->city(),
             'code' => strtoupper($this->faker->unique()->lexify('???-???')),
             'address' => $this->faker->address(),
             'is_active' => true,

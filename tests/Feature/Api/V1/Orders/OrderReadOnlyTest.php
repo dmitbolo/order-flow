@@ -62,18 +62,18 @@ test('it filters orders correctly by allowed fields', function (string $queryPar
     $response->assertStatus(Response::HTTP_OK)
         ->assertJsonCount($expectedCount, 'data')
         ->assertJsonPath('data.0.id', $expectedOrderId);
-    })->with([
-        'filter by status' => [
-            'queryParam' => 'filter[status]=' . OrderStatus::Pending->value,
-            'expectedCount' => 1,
-            'orderProperty' => 'pendingOrder'
-        ],
-        'filter by warehouse_id' => [
-            'queryParam' => 'filter[warehouse_id]={warehouse_id}',
-            'expectedCount' => 2,
-            'orderProperty' => 'completedOrder'
-        ]
-    ]);
+})->with([
+    'filter by status' => [
+        'queryParam' => 'filter[status]='.OrderStatus::Pending->value,
+        'expectedCount' => 1,
+        'orderProperty' => 'pendingOrder',
+    ],
+    'filter by warehouse_id' => [
+        'queryParam' => 'filter[warehouse_id]={warehouse_id}',
+        'expectedCount' => 2,
+        'orderProperty' => 'completedOrder',
+    ],
+]);
 
 test('it sorts orders correctly by allowed fields', function (string $sortParam, string $expectedFirstOrderProperty) {
     $firstExpectedOrderId = $this->{$expectedFirstOrderProperty}->id;
@@ -84,14 +84,14 @@ test('it sorts orders correctly by allowed fields', function (string $sortParam,
     $response->assertStatus(Response::HTTP_OK);
 
     expect($response->json('data.0.id'))->toBe($firstExpectedOrderId);
-    })->with([
-        'sort by id ascending'             => ['id', 'pendingOrder'],
-        'sort by id descending'            => ['-id', 'completedOrder'],
-        'sort by total_amount ascending'   => ['total_amount', 'pendingOrder'],
-        'sort by total_amount descending'  => ['-total_amount', 'completedOrder'],
-        'sort by created_at ascending'     => ['created_at', 'pendingOrder'],
-        'sort by created_at descending'    => ['-created_at', 'completedOrder'],
-    ]);
+})->with([
+    'sort by id ascending' => ['id', 'pendingOrder'],
+    'sort by id descending' => ['-id', 'completedOrder'],
+    'sort by total_amount ascending' => ['total_amount', 'pendingOrder'],
+    'sort by total_amount descending' => ['-total_amount', 'completedOrder'],
+    'sort by created_at ascending' => ['created_at', 'pendingOrder'],
+    'sort by created_at descending' => ['-created_at', 'completedOrder'],
+]);
 
 test('it limits per_page parameter to maximum 100', function () {
     Order::factory()->count(110)->create(['user_id' => $this->user->id]);
@@ -123,7 +123,7 @@ test('it loads allowed includes for a single order', function () {
                 'warehouse' => [
                     'id',
                 ],
-            ]
+            ],
         ]);
 
     expect($response->json('data.warehouse.id'))->toBe($this->warehouse->id);

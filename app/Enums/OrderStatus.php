@@ -12,7 +12,7 @@ enum OrderStatus: string
     // Человекочитаемые названия статусов для UI или ответов API
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::Pending => 'Ожидает обработки',
             self::Processing => 'В обработке',
             self::Canceled => 'Отменен',

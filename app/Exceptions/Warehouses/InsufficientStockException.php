@@ -8,11 +8,13 @@ use Symfony\Component\HttpFoundation\Response;
 class InsufficientStockException extends AppException
 {
     public string $errorCode = 'INSUFFICIENT_STOCK';
+
     public int $statusCode = Response::HTTP_UNPROCESSABLE_ENTITY;
+
     /**
-     * @param int $productId Идентификатор товара.
-     * @param int $requestedQuantity Сколько единиц товара было запрошено.
-     * @param int $availableQuantity Сколько единиц фактически доступно на складе.
+     * @param  int  $productId  Идентификатор товара.
+     * @param  int  $requestedQuantity  Сколько единиц товара было запрошено.
+     * @param  int  $availableQuantity  Сколько единиц фактически доступно на складе.
      */
     public function __construct(
         public readonly int $productId,
