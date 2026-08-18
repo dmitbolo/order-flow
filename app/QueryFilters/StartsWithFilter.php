@@ -7,9 +7,7 @@ use Spatie\QueryBuilder\Filters\Filter;
 
 readonly class StartsWithFilter implements Filter
 {
-    public function __construct(private string $column)
-    {
-    }
+    public function __construct(private string $column) {}
 
     public function __invoke(Builder $query, mixed $value, string $property): void
     {

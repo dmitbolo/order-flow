@@ -9,10 +9,21 @@ use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
+    #[OA\Post(
+        path: '/login',
+        summary: 'Issue an API token',
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/LoginRequest')),
+        tags: ['Authentication'],
+        responses: [
+            new OA\Response(response: 200, description: 'Token issued', content: new OA\JsonContent(ref: '#/components/schemas/LoginResponse')),
+            new OA\Response(response: 422, description: 'Invalid credentials or request', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+        ],
+    )]
     public function login(LoginRequest $request, LoginUserAction $action): JsonResponse
     {
         $token = $action->execute(
@@ -29,6 +40,16 @@ class AuthController extends Controller
     /**
      * Получить информацию о текущем авторизованном пользователе.
      */
+    #[OA\Get(
+        path: '/me',
+        summary: 'Get the current user',
+        security: [['sanctum' => []]],
+        tags: ['Authentication'],
+        responses: [
+            new OA\Response(response: 200, description: 'Current user', content: new OA\JsonContent(properties: [new OA\Property(property: 'data', ref: '#/components/schemas/User')])),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+        ],
+    )]
     public function me(Request $request): UserResource
     {
         return new UserResource($request->user());
@@ -37,6 +58,16 @@ class AuthController extends Controller
     /**
      * Выход из системы (отзыв текущего токена).
      */
+    #[OA\Post(
+        path: '/logout',
+        summary: 'Revoke the current API token',
+        security: [['sanctum' => []]],
+        tags: ['Authentication'],
+        responses: [
+            new OA\Response(response: 200, description: 'Token revoked', content: new OA\JsonContent(ref: '#/components/schemas/MessageResponse')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+        ],
+    )]
     public function logout(Request $request, LogoutUserAction $action): JsonResponse
     {
         $action->execute($request->user());
