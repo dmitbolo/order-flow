@@ -1,12 +1,11 @@
 {
-    "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.5",
         "darkaonline/l5-swagger": "^11.1",
         "filament/filament": "^5.7",
         "laravel/framework": "^13.8",
@@ -90,9 +89,6 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
-        },
-        "platform": {
-            "ext-pcntl": "8.4"
         }
     },
     "minimum-stability": "stable",
