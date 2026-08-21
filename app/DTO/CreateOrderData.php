@@ -27,6 +27,9 @@ readonly class CreateOrderData
         );
     }
 
+    /**
+     * @return array<int, int>
+     */
     public function getItemsWithQuantities(): array
     {
         return collect($this->items)

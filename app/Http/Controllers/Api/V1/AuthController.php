@@ -47,7 +47,7 @@ class AuthController extends Controller
         tags: ['Authentication'],
         responses: [
             new OA\Response(response: 200, description: 'Current user', content: new OA\JsonContent(properties: [new OA\Property(property: 'data', ref: '#/components/schemas/User')])),
-            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+            new OA\Response(ref: '#/components/responses/UnauthorizedError', response: 401),
         ],
     )]
     public function me(Request $request): UserResource
@@ -65,7 +65,7 @@ class AuthController extends Controller
         tags: ['Authentication'],
         responses: [
             new OA\Response(response: 200, description: 'Token revoked', content: new OA\JsonContent(ref: '#/components/schemas/MessageResponse')),
-            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+            new OA\Response(ref: '#/components/responses/UnauthorizedError', response: 401),
         ],
     )]
     public function logout(Request $request, LogoutUserAction $action): JsonResponse

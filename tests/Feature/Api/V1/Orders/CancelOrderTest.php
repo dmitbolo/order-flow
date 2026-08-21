@@ -44,7 +44,7 @@ it('successfully cancels a pending order via api', function () {
         ->assertJson([
             'message' => 'Заказ успешно отменен',
         ])
-        // Улучшено: проверяем точную структуру ответа из OrderResource
+
         ->assertJsonStructure([
             'message',
             'data' => [
@@ -66,6 +66,17 @@ it('successfully cancels a pending order via api', function () {
 
     $this->warehouseProduct->refresh();
     expect($this->warehouseProduct->stock_quantity)->toBe(13);
+
+    $this->assertDatabaseHas('stock_movements', [
+        'warehouse_id' => $this->warehouse->id,
+        'product_id' => $this->product->id,
+        'order_id' => $order->id,
+        'actor_id' => $this->user->id,
+        'type' => 'order_canceled',
+        'quantity_change' => 3,
+        'quantity_before' => 10,
+        'quantity_after' => 13,
+    ]);
 });
 
 it('returns 404 if a user tries to cancel someone else order', function () {
@@ -162,6 +173,11 @@ it('rolls back database changes if an unexpected error occurs during cancellatio
         ->value('stock_quantity');
 
     expect($actualStockInDb)->toBe(10);
+
+    $this->assertDatabaseMissing('stock_movements', [
+        'order_id' => $order->id,
+        'type' => 'order_canceled',
+    ]);
 });
 
 it('prevents double stock restoration on consecutive cancel requests', function () {

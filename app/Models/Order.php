@@ -78,6 +78,14 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    /**
+     * @param  array  $prices  [product_id => price]
+     */
     public static function createFromData(User $user, Warehouse $warehouse, CreateOrderData $data, array $prices): self
     {
         $totalAmount = 0;

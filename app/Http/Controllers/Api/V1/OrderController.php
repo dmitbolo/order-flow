@@ -13,10 +13,10 @@ use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use OpenApi\Attributes as OA;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 use Symfony\Component\HttpFoundation\Response;
-use OpenApi\Attributes as OA;
 
 class OrderController extends Controller
 {
@@ -38,8 +38,8 @@ class OrderController extends Controller
     )]
     public function index(Request $request): AnonymousResourceCollection
     {
-        $perPage = min((int)$request->input('per_page', 15), 100)
-                |> (fn($x) => max(1, $x));
+        $perPage = min((int) $request->input('per_page', 15), 100)
+                |> (fn ($x) => max(1, $x));
 
         $orders = QueryBuilder::for(
             $request->user()->orders()->getQuery()
@@ -65,7 +65,7 @@ class OrderController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Order', content: new OA\JsonContent(type: 'object', properties: [new OA\Property(property: 'data', ref: '#/components/schemas/Order')])),
-            new OA\Response(response: 400, ref: '#/components/responses/BadRequestError'),
+            new OA\Response(ref: '#/components/responses/BadRequestError', response: 400),
             new OA\Response(ref: '#/components/responses/UnauthorizedError', response: 401),
             new OA\Response(ref: '#/components/responses/NotFoundError', response: 404),
         ],
@@ -87,7 +87,7 @@ class OrderController extends Controller
             new OA\Response(response: 201, description: 'Order created', content: new OA\JsonContent(properties: [new OA\Property(property: 'message', type: 'string'), new OA\Property(property: 'data', ref: '#/components/schemas/Order')], type: 'object')),
             new OA\Response(ref: '#/components/responses/UnauthorizedError', response: 401),
             new OA\Response(response: 422, description: 'Validation error, insufficient stock, or product unavailable', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
-            new OA\Response(response: 404, ref: '#/components/responses/NotFoundError'),
+            new OA\Response(ref: '#/components/responses/NotFoundError', response: 404),
         ],
     )]
     public function store(CreateOrderRequest $request, CreateOrderAction $action): JsonResponse
@@ -123,7 +123,7 @@ class OrderController extends Controller
     {
         $order = $request->user()->orders()->findOrFail($id);
 
-        $canceledOrder = $action->execute($order);
+        $canceledOrder = $action->execute($order, $request->user());
 
         return response()->json([
             'message' => 'Заказ успешно отменен',

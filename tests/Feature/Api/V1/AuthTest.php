@@ -65,7 +65,8 @@ test('авторизованный пользователь может полу�
 test('гость не может получить доступ к /me без токена', function () {
     $response = $this->getJson('/api/v1/me');
 
-    $response->assertUnauthorized();
+    $response->assertUnauthorized()
+        ->assertJsonPath('error_code', 'UNAUTHENTICATED');
 });
 
 test('авторизованный пользователь может выйти из системы', function () {
@@ -101,5 +102,7 @@ test('a token issued at login grants access and is revoked at logout', function 
 });
 
 test('a guest cannot log out', function () {
-    $this->postJson('/api/v1/logout')->assertUnauthorized();
+    $this->postJson('/api/v1/logout')
+        ->assertUnauthorized()
+        ->assertJsonPath('error_code', 'UNAUTHENTICATED');
 });

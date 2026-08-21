@@ -12,7 +12,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'name', type: 'string', example: 'Apple juice'),
         new OA\Property(property: 'sku', type: 'string', example: 'APPLE-001'),
         new OA\Property(property: 'description', type: 'string', nullable: true),
-        new OA\Property(property: 'price', type: 'integer', description: 'Price in kopecks.', example: 19900),
+        new OA\Property(property: 'price', description: 'Price in kopecks.', type: 'integer', example: 19900),
         new OA\Property(property: 'stock_quantity', type: 'integer', example: 7),
     ],
 )]

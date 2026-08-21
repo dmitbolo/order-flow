@@ -3,6 +3,7 @@
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseProduct;
@@ -74,6 +75,19 @@ test('it successfully creates an order through api endpoint', function () {
         'product_id' => $this->product1->id,
         'stock_quantity' => 8,
     ]);
+
+    $this->assertDatabaseHas('stock_movements', [
+        'warehouse_id' => $this->warehouse->id,
+        'product_id' => $this->product1->id,
+        'order_id' => $response->json('data.id'),
+        'actor_id' => $this->user->id,
+        'type' => 'order_created',
+        'quantity_change' => -2,
+        'quantity_before' => 10,
+        'quantity_after' => 8,
+    ]);
+
+    expect(StockMovement::where('order_id', $response->json('data.id'))->count())->toBe(2);
 });
 
 test('it fails request validation when missing required fields', function () {
@@ -147,7 +161,8 @@ test('it rejects duplicate products and does not change stock', function () {
     $response->assertUnprocessable()
         ->assertJsonValidationErrors(['items.0.product_id', 'items.1.product_id']);
 
-    expect(Order::count())->toBe(0);
+    expect(Order::count())->toBe(0)
+        ->and(StockMovement::query()->count())->toBe(0);
     $this->assertDatabaseHas('warehouse_product', [
         'warehouse_id' => $this->warehouse->id,
         'product_id' => $this->product1->id,

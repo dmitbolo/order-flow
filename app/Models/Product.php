@@ -66,4 +66,9 @@ class Product extends Model
             ->withPivot('price', 'stock_quantity')
             ->withTimestamps();
     }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
 }
