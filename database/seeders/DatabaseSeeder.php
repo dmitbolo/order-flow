@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\StockMovementType;
 use App\Models\Product;
+use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseProduct;
@@ -30,10 +32,22 @@ class DatabaseSeeder extends Seeder
 
         foreach ($warehouses as $warehouse) {
             foreach ($products as $product) {
-                WarehouseProduct::factory()->create([
+                $warehouseProduct = WarehouseProduct::factory()->create([
                     'warehouse_id' => $warehouse->id,
                     'product_id' => $product->id,
                 ]);
+
+                if ($warehouseProduct->stock_quantity > 0) {
+                    StockMovement::create([
+                        'warehouse_id' => $warehouse->id,
+                        'product_id' => $product->id,
+                        'type' => StockMovementType::InitialBalance,
+                        'quantity_change' => $warehouseProduct->stock_quantity,
+                        'quantity_before' => 0,
+                        'quantity_after' => $warehouseProduct->stock_quantity,
+                        'comment' => 'Начальный остаток',
+                    ]);
+                }
             }
         }
     }

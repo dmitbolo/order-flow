@@ -2,10 +2,11 @@
 
 namespace App\Filament\Resources\Products\RelationManagers;
 
+use App\Actions\Stock\AdjustStockAction;
+use App\Models\User;
+use App\Models\Warehouse;
+use Filament\Actions\Action;
 use Filament\Actions\AttachAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DetachAction;
-use Filament\Actions\DetachBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -24,11 +25,6 @@ class WarehousesRelationManager extends RelationManager
                 TextInput::make('price')
                     ->label('Цена (в копейках/центах)')
                     ->numeric()
-                    ->required(),
-                TextInput::make('stock_quantity')
-                    ->label('Остаток на складе')
-                    ->numeric()
-                    ->default(0)
                     ->required(),
             ]);
     }
@@ -64,21 +60,31 @@ class WarehousesRelationManager extends RelationManager
                             ->label('Цена (в копейках)')
                             ->numeric()
                             ->required(),
-                        TextInput::make('stock_quantity')
-                            ->label('Остаток на складе')
-                            ->numeric()
-                            ->default(0)
-                            ->required(),
                     ]),
             ])
             ->recordActions([
                 EditAction::make(),
-                DetachAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DetachBulkAction::make(),
-                ]),
+                Action::make('adjustStock')
+                    ->label('Скорректировать остаток')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->form([
+                        TextInput::make('quantity_change')
+                            ->label('Изменение остатка')
+                            ->helperText('Положительное число увеличит остаток, отрицательное — уменьшит.')
+                            ->integer()
+                            ->required()
+                            ->notIn([0]),
+                    ])
+                    ->action(function (Warehouse $record, array $data): void {
+                        $user = auth()->user();
+
+                        app(AdjustStockAction::class)->execute(
+                            warehouse: $record,
+                            productId: $this->getOwnerRecord()->id,
+                            quantityChange: (int) $data['quantity_change'],
+                            actor: $user instanceof User ? $user : null,
+                        );
+                    }),
             ]);
     }
 }

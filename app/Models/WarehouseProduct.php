@@ -43,7 +43,6 @@ class WarehouseProduct extends Pivot
         'warehouse_id',
         'product_id',
         'price',
-        'stock_quantity',
     ];
 
     protected $casts = [

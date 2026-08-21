@@ -9,7 +9,7 @@ use OpenApi\Attributes as OA;
     required: ['name', 'email', 'created_at'],
     properties: [
         new OA\Property(property: 'name', type: 'string', example: 'Jane Doe'),
-        new OA\Property(property: 'email', type: 'string', format: 'email', example: 'jane@example.com'),
+        new OA\Property(property: 'email', type: 'string', format: 'email', example: 'test@example.com'),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
     ],
 )]
