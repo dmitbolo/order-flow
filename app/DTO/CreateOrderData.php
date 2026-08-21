@@ -17,13 +17,16 @@ readonly class CreateOrderData
 
     public static function fromRequest(CreateOrderRequest $request): self
     {
+        /** @var array{warehouse_id: int|string, items: list<array{product_id: int|string, quantity: int|string}>, notes?: string|null} $validated */
+        $validated = $request->validated();
+
         return new self(
-            warehouseId: (int) $request->validated('warehouse_id'),
+            warehouseId: (int) $validated['warehouse_id'],
             items: array_map(
                 fn (array $item) => OrderItemData::fromArray($item),
-                $request->validated('items')
+                $validated['items']
             ),
-            notes: $request->validated('notes'),
+            notes: $validated['notes'] ?? null,
         );
     }
 

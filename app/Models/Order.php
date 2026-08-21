@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property int $warehouse_id
- * @property string $status
+ * @property OrderStatus $status
  * @property int $total_amount
  * @property string|null $notes
  * @property Carbon|null $created_at
@@ -63,28 +63,32 @@ class Order extends Model
         get => $this->status->label();
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<Warehouse, $this> */
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
     }
 
+    /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
 
+    /** @return HasMany<StockMovement, $this> */
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
     }
 
     /**
-     * @param  array  $prices  [product_id => price]
+     * @param  array<int, int>  $prices  [product_id => price]
      */
     public static function createFromData(User $user, Warehouse $warehouse, CreateOrderData $data, array $prices): self
     {

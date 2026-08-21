@@ -72,8 +72,9 @@ class OrderController extends Controller
     )]
     public function show(int $id): OrderResource
     {
-        $order = QueryBuilder::for(Order::class)
-            ->where('user_id', auth()->id())
+        $order = QueryBuilder::for(
+            Order::query()->where('user_id', auth()->id())
+        )
             ->allowedIncludes('warehouse', 'items')
             ->findOrFail($id);
 

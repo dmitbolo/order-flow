@@ -54,6 +54,7 @@ class Warehouse extends Model
         'is_active' => 'boolean',
     ];
 
+    /** @return BelongsToMany<Product, $this, WarehouseProduct, 'pivot'> */
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'warehouse_product')
@@ -62,11 +63,13 @@ class Warehouse extends Model
             ->withTimestamps();
     }
 
+    /** @return HasMany<Order, $this> */
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
     }
 
+    /** @return HasMany<StockMovement, $this> */
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
