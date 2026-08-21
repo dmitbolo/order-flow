@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\RelationManagers;
 
 use App\Actions\Stock\AdjustStockAction;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
 use Filament\Actions\Action;
@@ -77,10 +78,12 @@ class WarehousesRelationManager extends RelationManager
                     ])
                     ->action(function (Warehouse $record, array $data): void {
                         $user = auth()->user();
+                        /** @var Product $product */
+                        $product = $this->getOwnerRecord();
 
                         app(AdjustStockAction::class)->execute(
                             warehouse: $record,
-                            productId: $this->getOwnerRecord()->id,
+                            productId: $product->id,
                             quantityChange: (int) $data['quantity_change'],
                             actor: $user instanceof User ? $user : null,
                         );

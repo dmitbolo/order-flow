@@ -17,6 +17,7 @@
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
         "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
@@ -56,6 +57,35 @@
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
+        ],
+        "lint": [
+            "@php vendor/bin/pint --test"
+        ],
+        "format": [
+            "@php vendor/bin/pint"
+        ],
+        "analyse": [
+            "@php vendor/bin/phpstan analyse --memory-limit=1G"
+        ],
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ],
+        "docker:test": [
+            "docker compose exec -T laravel.test composer test"
+        ],
+        "docker:lint": [
+            "docker compose exec -T laravel.test composer lint"
+        ],
+        "docker:format": [
+            "docker compose exec -T laravel.test composer format"
+        ],
+        "docker:analyse": [
+            "docker compose exec -T laravel.test composer analyse"
+        ],
+        "docker:check": [
+            "docker compose exec -T laravel.test composer check"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

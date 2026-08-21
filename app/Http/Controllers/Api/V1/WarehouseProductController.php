@@ -7,6 +7,7 @@ use App\Http\Resources\Api\V1\ProductResource;
 use App\Models\Warehouse;
 use App\QueryFilters\StartsWithFilter;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use OpenApi\Attributes as OA;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -38,7 +39,7 @@ class WarehouseProductController extends Controller
             new OA\Response(ref: '#/components/responses/NotFoundError', response: 404),
         ],
     )]
-    public function index(Request $request, int $id)
+    public function index(Request $request, int $id): AnonymousResourceCollection
     {
         $warehouse = Warehouse::query()
             ->where('is_active', true)

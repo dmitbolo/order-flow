@@ -3,8 +3,10 @@
 namespace App\QueryFilters;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\QueryBuilder\Filters\Filter;
 
+/** @implements Filter<Model> */
 readonly class StartsWithFilter implements Filter
 {
     public function __construct(private string $column) {}

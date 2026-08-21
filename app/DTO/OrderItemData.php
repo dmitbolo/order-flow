@@ -9,6 +9,9 @@ readonly class OrderItemData
         public int $quantity,
     ) {}
 
+    /**
+     * @param  array{product_id: int|string, quantity: int|string}  $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(
