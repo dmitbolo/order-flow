@@ -69,7 +69,7 @@ test('a manual adjustment changes the quantity and creates a journal entry', fun
         'stock_quantity' => 7,
     ]);
 
-    app(AdjustStockAction::class)->execute($warehouse, $product->id, -2, $user);
+    app(AdjustStockAction::class)->execute($warehouse, $product->id, -2, $user, 'Inventory recount');
 
     $this->assertDatabaseHas('warehouse_product', [
         'warehouse_id' => $warehouse->id,
@@ -84,6 +84,7 @@ test('a manual adjustment changes the quantity and creates a journal entry', fun
         'quantity_change' => -2,
         'quantity_before' => 7,
         'quantity_after' => 5,
+        'comment' => 'Inventory recount',
     ]);
 });
 

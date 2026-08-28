@@ -2,11 +2,18 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Models\Product;
+use App\Models\User;
+use App\Models\Warehouse;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrderForm
 {
@@ -14,62 +21,83 @@ class OrderForm
     {
         return $schema
             ->components([
-                Select::make('user_id')
-                    ->label('Клиент')
-                    ->relationship('user', 'name')
-                    ->searchable()
-                    ->required(),
-
-                Select::make('warehouse_id')
-                    ->label('Склад отгрузки')
-                    ->relationship('warehouse', 'name')
-                    ->required(),
-
-                Select::make('status')
-                    ->label('Статус заказа')
-                    ->options([
-                        'pending' => 'Pending (Ожидает)',
-                        'processing' => 'Processing (В обработке)',
-                        'completed' => 'Completed (Завершен)',
-                        'cancelled' => 'Cancelled (Отменен)',
-                    ])
-                    ->default('pending')
-                    ->required(),
-
-                TextInput::make('total_amount')
-                    ->label('Итоговая сумма (в копейках)')
-                    ->numeric()
-                    ->default(0)
-                    ->required(),
-
-                Textarea::make('notes')
-                    ->label('Заметки / Пожелания')
-                    ->columnSpanFull(),
-
-                // Позволяет добавлять товары напрямую внутри формы заказа
-                Repeater::make('items')
-                    ->label('Состав заказа')
-                    ->relationship('items')
+                Section::make('Заказ')
                     ->schema([
-                        Select::make('product_id')
-                            ->label('Товар')
-                            ->relationship('product', 'name')
+                        Select::make('user_id')
+                            ->label('Клиент')
+                            ->relationship('user', 'name')
+                            ->getOptionLabelFromRecordUsing(
+                                fn (User $record): string => "{$record->name} ({$record->email})",
+                            )
+                            ->searchable(['name', 'email'])
+                            ->preload()
+                            ->required(),
+
+                        Select::make('warehouse_id')
+                            ->label('Склад отгрузки')
+                            ->options(fn (): array => Warehouse::query()
+                                ->where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
                             ->searchable()
+                            ->preload()
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('items', []))
                             ->required(),
 
-                        TextInput::make('quantity')
-                            ->label('Количество')
-                            ->numeric()
-                            ->default(1)
-                            ->required(),
-
-                        TextInput::make('price')
-                            ->label('Цена (коп.)')
-                            ->numeric()
-                            ->required(),
+                        Textarea::make('notes')
+                            ->label('Заметки / пожелания')
+                            ->maxLength(1000)
+                            ->columnSpanFull(),
                     ])
-                    ->columns(3)
-                    ->columnSpanFull(),
+                    ->columns(2),
+
+                Section::make('Состав заказа')
+                    ->schema([
+                        Repeater::make('items')
+                            ->hiddenLabel()
+                            ->addActionLabel('Добавить товар')
+                            ->schema([
+                                Select::make('product_id')
+                                    ->label('Товар')
+                                    ->options(function (Get $get): array {
+                                        $warehouseId = (int) $get('../../warehouse_id');
+
+                                        if ($warehouseId < 1) {
+                                            return [];
+                                        }
+
+                                        return Product::query()
+                                            ->where('is_active', true)
+                                            ->whereHas(
+                                                'warehouses',
+                                                fn (Builder $query): Builder => $query
+                                                    ->where('warehouses.id', $warehouseId)
+                                                    ->where('warehouse_product.stock_quantity', '>', 0),
+                                            )
+                                            ->orderBy('name')
+                                            ->pluck('name', 'id')
+                                            ->all();
+                                    })
+                                    ->disabled(fn (Get $get): bool => ! $get('../../warehouse_id'))
+                                    ->searchable()
+                                    ->preload()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->required(),
+
+                                TextInput::make('quantity')
+                                    ->label('Количество')
+                                    ->integer()
+                                    ->minValue(1)
+                                    ->default(1)
+                                    ->required(),
+                            ])
+                            ->columns(2)
+                            ->minItems(1)
+                            ->defaultItems(1)
+                            ->required(),
+                    ]),
             ]);
     }
 }

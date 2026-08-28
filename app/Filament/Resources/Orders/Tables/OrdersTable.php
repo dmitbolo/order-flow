@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
-use Filament\Actions\EditAction;
+use App\Enums\OrderStatus;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -13,6 +13,7 @@ class OrdersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('id')
                     ->label('ID')
@@ -28,14 +29,7 @@ class OrdersTable
 
                 TextColumn::make('status')
                     ->label('Статус')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'processing' => 'info',
-                        'completed' => 'success',
-                        'cancelled' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->badge(),
 
                 TextColumn::make('total_amount')
                     ->label('Сумма')
@@ -50,12 +44,7 @@ class OrdersTable
             ->filters([
                 SelectFilter::make('status')
                     ->label('Статус')
-                    ->options([
-                        'pending' => 'Pending',
-                        'processing' => 'Processing',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
-                    ]),
+                    ->options(OrderStatus::class),
 
                 SelectFilter::make('warehouse_id')
                     ->label('Склад')
@@ -63,7 +52,6 @@ class OrdersTable
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
             ]);
     }
 }

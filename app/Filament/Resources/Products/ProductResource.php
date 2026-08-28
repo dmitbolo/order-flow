@@ -13,12 +13,19 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static ?string $navigationLabel = 'Товары';
+
+    protected static ?string $modelLabel = 'товар';
+
+    protected static ?string $pluralModelLabel = 'товары';
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -30,6 +37,16 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return ProductsTable::configure($table);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
     }
 
     public static function getRelations(): array

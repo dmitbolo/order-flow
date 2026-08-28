@@ -13,12 +13,21 @@ class WarehouseForm
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->label('Название склада')
+                    ->maxLength(255)
                     ->required(),
                 TextInput::make('code')
+                    ->label('Код склада')
+                    ->maxLength(255)
+                    ->unique(ignoreRecord: true)
                     ->required(),
-                TextInput::make('address'),
+                TextInput::make('address')
+                    ->label('Адрес')
+                    ->maxLength(255),
                 Toggle::make('is_active')
-                    ->required(),
+                    ->label('Активен')
+                    ->helperText('Неактивный склад скрыт в API и недоступен для новых заказов.')
+                    ->default(true),
             ]);
     }
 }

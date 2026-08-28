@@ -2,11 +2,10 @@
 
 namespace App\Filament\Resources\Warehouses\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class WarehousesTable
@@ -16,12 +15,16 @@ class WarehousesTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('Название')
                     ->searchable(),
                 TextColumn::make('code')
+                    ->label('Код')
                     ->searchable(),
                 TextColumn::make('address')
+                    ->label('Адрес')
                     ->searchable(),
                 IconColumn::make('is_active')
+                    ->label('Активен')
                     ->boolean(),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -33,15 +36,11 @@ class WarehousesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                TernaryFilter::make('is_active')
+                    ->label('Активность'),
             ])
             ->recordActions([
                 EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }
