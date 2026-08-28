@@ -142,6 +142,27 @@ test('it fails validation when product is not attached to the warehouse', functi
         ]);
 });
 
+test('it rejects an inactive product attached to the warehouse', function () {
+    $inactiveProduct = Product::factory()->create(['is_active' => false]);
+    WarehouseProduct::factory()->create([
+        'warehouse_id' => $this->warehouse->id,
+        'product_id' => $inactiveProduct->id,
+        'stock_quantity' => 10,
+    ]);
+
+    $response = $this->actingAs($this->user)->postJson('/api/v1/orders', [
+        'warehouse_id' => $this->warehouse->id,
+        'items' => [
+            ['product_id' => $inactiveProduct->id, 'quantity' => 1],
+        ],
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonPath('error_code', 'PRODUCT_UNAVAILABLE');
+
+    expect(Order::query()->count())->toBe(0);
+});
+
 test('a guest cannot create an order', function () {
     $this->postJson('/api/v1/orders', [
         'warehouse_id' => $this->warehouse->id,

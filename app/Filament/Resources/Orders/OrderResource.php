@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Orders;
 
 use App\Filament\Resources\Orders\Pages\CreateOrder;
-use App\Filament\Resources\Orders\Pages\EditOrder;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Resources\Orders\Schemas\OrderForm;
@@ -15,12 +14,20 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static ?string $navigationLabel = 'Заказы';
+
+    protected static ?string $modelLabel = 'заказ';
+
+    protected static ?string $pluralModelLabel = 'заказы';
 
     protected static ?string $recordTitleAttribute = 'id';
 
@@ -39,6 +46,41 @@ class OrderResource extends Resource
         return OrdersTable::configure($table);
     }
 
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return parent::getRecordRouteBindingEloquentQuery()
+            ->with(static::getRecordEagerLoads());
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function getRecordEagerLoads(): array
+    {
+        return [
+            'user',
+            'warehouse',
+            'items.product',
+            'stockMovements.product',
+            'stockMovements.actor',
+        ];
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -52,7 +94,6 @@ class OrderResource extends Resource
             'index' => ListOrders::route('/'),
             'create' => CreateOrder::route('/create'),
             'view' => ViewOrder::route('/{record}'),
-            'edit' => EditOrder::route('/{record}/edit'),
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\WarehouseProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
 
@@ -15,6 +16,8 @@ use Illuminate\Support\Carbon;
  * @property int $stock_quantity
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Product $product
+ * @property-read Warehouse $warehouse
  *
  * @method static \Database\Factories\WarehouseProductFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WarehouseProduct newModelQuery()
@@ -49,4 +52,16 @@ class WarehouseProduct extends Pivot
         'price' => 'integer',
         'stock_quantity' => 'integer',
     ];
+
+    /** @return BelongsTo<Warehouse, $this> */
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
 }

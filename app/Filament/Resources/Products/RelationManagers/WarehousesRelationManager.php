@@ -3,17 +3,23 @@
 namespace App\Filament\Resources\Products\RelationManagers;
 
 use App\Actions\Stock\AdjustStockAction;
+use App\Exceptions\AppException;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
 use Filament\Actions\Action;
 use Filament\Actions\AttachAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use LogicException;
 
 class WarehousesRelationManager extends RelationManager
 {
@@ -25,7 +31,8 @@ class WarehousesRelationManager extends RelationManager
             ->components([
                 TextInput::make('price')
                     ->label('Цена (в копейках/центах)')
-                    ->numeric()
+                    ->integer()
+                    ->minValue(0)
                     ->required(),
             ]);
     }
@@ -55,11 +62,15 @@ class WarehousesRelationManager extends RelationManager
             ->headerActions([
                 AttachAction::make()
                     ->preloadRecordSelect()
-                    ->form(fn (AttachAction $action): array => [
+                    ->recordSelectOptionsQuery(
+                        fn (Builder $query): Builder => $query->where('is_active', true),
+                    )
+                    ->schema(fn (AttachAction $action): array => [
                         $action->getRecordSelect(),
                         TextInput::make('price')
                             ->label('Цена (в копейках)')
-                            ->numeric()
+                            ->integer()
+                            ->minValue(0)
                             ->required(),
                     ]),
             ])
@@ -68,25 +79,48 @@ class WarehousesRelationManager extends RelationManager
                 Action::make('adjustStock')
                     ->label('Скорректировать остаток')
                     ->icon('heroicon-o-arrows-right-left')
-                    ->form([
+                    ->schema([
                         TextInput::make('quantity_change')
                             ->label('Изменение остатка')
                             ->helperText('Положительное число увеличит остаток, отрицательное — уменьшит.')
                             ->integer()
                             ->required()
                             ->notIn([0]),
+                        Textarea::make('comment')
+                            ->label('Комментарий')
+                            ->maxLength(255)
+                            ->required(),
                     ])
                     ->action(function (Warehouse $record, array $data): void {
-                        $user = auth()->user();
+                        $user = Filament::auth()->user();
+
+                        if (! $user instanceof User) {
+                            throw new LogicException('The authenticated Filament user is invalid.');
+                        }
+
                         /** @var Product $product */
                         $product = $this->getOwnerRecord();
 
-                        app(AdjustStockAction::class)->execute(
-                            warehouse: $record,
-                            productId: $product->id,
-                            quantityChange: (int) $data['quantity_change'],
-                            actor: $user instanceof User ? $user : null,
-                        );
+                        try {
+                            app(AdjustStockAction::class)->execute(
+                                warehouse: $record,
+                                productId: $product->id,
+                                quantityChange: (int) $data['quantity_change'],
+                                actor: $user,
+                                comment: (string) $data['comment'],
+                            );
+
+                            Notification::make()
+                                ->success()
+                                ->title('Остаток скорректирован')
+                                ->send();
+                        } catch (AppException $exception) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Не удалось скорректировать остаток')
+                                ->body($exception->errorMessage)
+                                ->send();
+                        }
                     }),
             ]);
     }

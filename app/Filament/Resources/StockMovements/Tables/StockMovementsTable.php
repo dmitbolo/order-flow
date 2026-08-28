@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\StockMovements\Tables;
 
 use App\Enums\StockMovementType;
+use App\Filament\Resources\Orders\OrderResource;
+use App\Models\StockMovement;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -31,7 +33,6 @@ class StockMovementsTable
                     ->toggleable(),
                 TextColumn::make('type')
                     ->label('Операция')
-                    ->formatStateUsing(fn (StockMovementType $state): string => $state->label())
                     ->badge(),
                 TextColumn::make('quantity_change')
                     ->label('Изменение')
@@ -47,6 +48,19 @@ class StockMovementsTable
                 TextColumn::make('order_id')
                     ->label('Заказ')
                     ->prefix('#')
+                    ->placeholder('-')
+                    ->url(fn (StockMovement $record): ?string => $record->order_id
+                        ? OrderResource::getUrl('view', ['record' => $record->order_id])
+                        : null)
+                    ->toggleable(),
+                TextColumn::make('actor.name')
+                    ->label('Исполнитель')
+                    ->placeholder('Система')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('comment')
+                    ->label('Комментарий')
+                    ->placeholder('-')
                     ->toggleable(),
             ])
             ->filters([
@@ -60,9 +74,7 @@ class StockMovementsTable
                     ->preload(),
                 SelectFilter::make('type')
                     ->label('Операция')
-                    ->options(collect(StockMovementType::cases())
-                        ->mapWithKeys(fn (StockMovementType $type) => [$type->value => $type->label()])
-                        ->all()),
+                    ->options(StockMovementType::class),
                 Filter::make('created_at')
                     ->label('Период')
                     ->schema([

@@ -3,6 +3,7 @@
 namespace App\DTO;
 
 use App\Http\Requests\Api\V1\CreateOrderRequest;
+use InvalidArgumentException;
 
 readonly class CreateOrderData
 {
@@ -13,7 +14,29 @@ readonly class CreateOrderData
         public int $warehouseId,
         public array $items,
         public ?string $notes = null,
-    ) {}
+    ) {
+        if ($warehouseId < 1) {
+            throw new InvalidArgumentException('The warehouse identifier must be a positive integer.');
+        }
+
+        if ($items === []) {
+            throw new InvalidArgumentException('An order must contain at least one item.');
+        }
+
+        $productIds = [];
+
+        foreach ($items as $item) {
+            if ($item->productId < 1 || $item->quantity < 1) {
+                throw new InvalidArgumentException('Product identifiers and quantities must be positive integers.');
+            }
+
+            if (isset($productIds[$item->productId])) {
+                throw new InvalidArgumentException('Products in an order must be unique.');
+            }
+
+            $productIds[$item->productId] = true;
+        }
+    }
 
     public static function fromRequest(CreateOrderRequest $request): self
     {
@@ -35,9 +58,14 @@ readonly class CreateOrderData
      */
     public function getItemsWithQuantities(): array
     {
-        return collect($this->items)
-            ->pluck('quantity', 'productId')
-            ->sortKeys()
-            ->toArray();
+        $quantities = [];
+
+        foreach ($this->items as $item) {
+            $quantities[$item->productId] = $item->quantity;
+        }
+
+        ksort($quantities);
+
+        return $quantities;
     }
 }
