@@ -19,16 +19,26 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
         $this->hideSensitiveRequestDetails();
 
-        $isLocal = $this->app->environment('local');
+        $isLocalOrTesting = $this->app->environment(['local', 'testing']);
 
-        Telescope::filter(function (IncomingEntry $entry) use ($isLocal) {
-            return $isLocal ||
+        Telescope::filter(function (IncomingEntry $entry) use ($isLocalOrTesting) {
+            return $isLocalOrTesting ||
                    $entry->isReportableException() ||
                    $entry->isFailedRequest() ||
                    $entry->isFailedJob() ||
                    $entry->isScheduledTask() ||
                    $entry->hasMonitoredTag();
         });
+    }
+
+    /**
+     * Require an authenticated administrator in every enabled environment.
+     */
+    protected function authorization(): void
+    {
+        $this->gate();
+
+        Telescope::auth(fn ($request): bool => Gate::check('viewTelescope', [$request->user()]));
     }
 
     /**
@@ -56,10 +66,6 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function gate(): void
     {
-        Gate::define('viewTelescope', function (User $user) {
-            return in_array($user->email, [
-                //
-            ]);
-        });
+        Gate::define('viewTelescope', fn (User $user): bool => $user->is_admin);
     }
 }

@@ -6,6 +6,7 @@ use App\Actions\Stock\ApplyStockMovementAction;
 use App\Actions\Stock\LockStockAction;
 use App\DTO\CreateOrderData;
 use App\DTO\Stock\StockMovementContext;
+use App\Events\OrderCreated;
 use App\Exceptions\Products\ProductUnavailableException;
 use App\Models\Order;
 use App\Models\Product;
@@ -54,6 +55,12 @@ class CreateOrderAction
             $this->applyMovement->execute(
                 $lockedStock,
                 StockMovementContext::orderCreated($order, $actor ?? $user),
+            );
+
+            OrderCreated::dispatch(
+                orderId: $order->id,
+                warehouseId: $warehouse->id,
+                productIds: $productIds,
             );
 
             return $order->load(['warehouse', 'items']);

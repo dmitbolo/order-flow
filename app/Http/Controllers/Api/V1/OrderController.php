@@ -97,7 +97,7 @@ class OrderController extends Controller
 
         $order = $action->execute(
             user: $request->user(),
-            data: $dto
+            data: $dto,
         );
 
         return response()->json([

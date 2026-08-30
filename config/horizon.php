@@ -97,7 +97,8 @@ return [
     */
 
     'waits' => [
-        'redis:default' => 60,
+        'redis:inventory' => 30,
+        'redis:notifications' => 120,
     ],
 
     /*
@@ -197,33 +198,63 @@ return [
     */
 
     'defaults' => [
-        'supervisor-1' => [
+        'supervisor-inventory' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            'queue' => ['inventory'],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 60,
+            'nice' => 0,
+        ],
+        'supervisor-notifications' => [
+            'connection' => 'redis',
+            'queue' => ['notifications'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 128,
-            'tries' => 1,
+            'tries' => 3,
             'timeout' => 60,
-            'nice' => 0,
+            'nice' => 5,
         ],
     ],
 
     'environments' => [
         'production' => [
-            'supervisor-1' => [
-                'maxProcesses' => 10,
+            'supervisor-inventory' => [
+                'maxProcesses' => 6,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
+            ],
+            'supervisor-notifications' => [
+                'maxProcesses' => 2,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 5,
             ],
         ],
 
         'local' => [
-            'supervisor-1' => [
-                'maxProcesses' => 3,
+            'supervisor-inventory' => [
+                'maxProcesses' => 2,
+            ],
+            'supervisor-notifications' => [
+                'maxProcesses' => 1,
+            ],
+        ],
+
+        'testing' => [
+            'supervisor-inventory' => [
+                'maxProcesses' => 1,
+            ],
+            'supervisor-notifications' => [
+                'maxProcesses' => 1,
             ],
         ],
     ],
