@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -26,8 +27,8 @@ class ApiExceptionHandler
         self::registerNotFoundHandler($exceptions);
         self::registerValidationHandler($exceptions);
         self::registerAuthHandlers($exceptions);
-        self::registerFallbackHandler($exceptions);
         self::registerAppExceptionHandler($exceptions);
+        self::registerFallbackHandler($exceptions);
     }
 
     private static function registerNotFoundHandler(Exceptions $exceptions): void
@@ -99,7 +100,11 @@ class ApiExceptionHandler
     private static function registerFallbackHandler(Exceptions $exceptions): void
     {
         $exceptions->render(function (Throwable $e, Request $request) {
-            if (! $request->is('api/*') || config('app.debug')) {
+            if (
+                ! $request->is('api/*')
+                || config('app.debug')
+                || $e instanceof HttpExceptionInterface
+            ) {
                 return null;
             }
 
