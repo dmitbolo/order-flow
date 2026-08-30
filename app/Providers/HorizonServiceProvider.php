@@ -21,16 +21,22 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     }
 
     /**
+     * Require an authenticated administrator in every environment.
+     */
+    protected function authorization(): void
+    {
+        $this->gate();
+
+        Horizon::auth(fn ($request): bool => Gate::check('viewHorizon', [$request->user()]));
+    }
+
+    /**
      * Register the Horizon gate.
      *
      * This gate determines who can access Horizon in non-local environments.
      */
     protected function gate(): void
     {
-        Gate::define('viewHorizon', function ($user = null) {
-            return in_array(optional($user)->email, [
-                //
-            ]);
-        });
+        Gate::define('viewHorizon', fn ($user = null): bool => (bool) $user?->is_admin);
     }
 }
