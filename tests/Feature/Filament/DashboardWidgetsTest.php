@@ -14,7 +14,9 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseProduct;
 use Filament\Facades\Filament;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -35,20 +37,31 @@ test('the admin panel registers the operational dashboard widgets', function () 
 });
 
 test('order statistics show current operational metrics', function () {
-    Order::factory()->create(['status' => OrderStatus::Pending]);
-    Order::factory()->create(['status' => OrderStatus::Processing]);
+    Order::factory()->count(2)->create(['status' => OrderStatus::Pending]);
+    Order::factory()->count(3)->create(['status' => OrderStatus::Processing]);
     Order::factory()->create([
         'status' => OrderStatus::Completed,
         'total_amount' => 12_345,
         'updated_at' => now(),
     ]);
+    Order::factory()->create([
+        'status' => OrderStatus::Completed,
+        'total_amount' => 99_999,
+        'updated_at' => now()->subDay(),
+    ]);
 
     $component = Livewire::test(OrderStatsOverview::class)
-        ->assertSee('Ожидают обработки')
-        ->assertSee('В обработке')
-        ->assertSee('Завершены сегодня')
-        ->assertSee('Сумма завершённых сегодня')
-        ->assertSee('123,45');
+        ->assertSeeInOrder([
+            'Ожидают обработки',
+            '2',
+            'В обработке',
+            '3',
+            'Завершены сегодня',
+            '1',
+            'Сумма завершённых сегодня',
+            '123,45',
+        ])
+        ->assertDontSee('999,99');
 
     foreach ([OrderStatus::Pending, OrderStatus::Processing, OrderStatus::Completed] as $status) {
         $component->assertSee(OrderResource::getUrl('index', [
@@ -59,6 +72,30 @@ test('order statistics show current operational metrics', function () {
             ],
         ]), escape: false);
     }
+});
+
+test('order statistics are loaded with one aggregate query', function () {
+    Order::factory()->create(['status' => OrderStatus::Pending]);
+    Order::factory()->create(['status' => OrderStatus::Processing]);
+    Order::factory()->create([
+        'status' => OrderStatus::Completed,
+        'updated_at' => now(),
+    ]);
+
+    $orderQueries = [];
+
+    DB::listen(function (QueryExecuted $query) use (&$orderQueries): void {
+        if (str_contains(strtolower($query->sql), 'orders')) {
+            $orderQueries[] = $query->sql;
+        }
+    });
+
+    Livewire::test(OrderStatsOverview::class);
+
+    expect($orderQueries)
+        ->toHaveCount(1)
+        ->and(strtolower($orderQueries[0]))
+        ->toContain('case when');
 });
 
 test('recent orders widget displays the latest orders', function () {
