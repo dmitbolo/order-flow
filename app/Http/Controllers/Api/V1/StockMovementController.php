@@ -35,8 +35,6 @@ class StockMovementController extends Controller
     )]
     public function index(Request $request): AnonymousResourceCollection
     {
-        $perPage = max(1, min((int) $request->input('per_page', 20), 100));
-
         $movements = QueryBuilder::for($request->user()->stockMovements()->with(['warehouse', 'product']))
             ->allowedFilters(
                 AllowedFilter::exact('warehouse_id'),
@@ -50,7 +48,7 @@ class StockMovementController extends Controller
                 AllowedSort::field('quantity_after'),
             )
             ->defaultSort('-created_at')
-            ->paginate($perPage)
+            ->paginate($this->perPage($request, default: 20))
             ->withQueryString();
 
         return StockMovementResource::collection($movements);

@@ -34,8 +34,6 @@ class WarehouseController extends Controller
     )]
     public function index(Request $request): AnonymousResourceCollection
     {
-        $perPage = max(1, min((int) $request->input('per_page', 15), 100));
-
         $warehouses = QueryBuilder::for(Warehouse::query()->where('is_active', true))
             ->allowedFilters(
                 AllowedFilter::custom('name', new StartsWithFilter('warehouses.name'))->delimiter(''),
@@ -43,7 +41,7 @@ class WarehouseController extends Controller
             )
             ->allowedSorts('name', 'code', 'created_at')
             ->defaultSort('name')
-            ->paginate($perPage)
+            ->paginate($this->perPage($request, default: 15))
             ->withQueryString();
 
         return WarehouseResource::collection($warehouses);

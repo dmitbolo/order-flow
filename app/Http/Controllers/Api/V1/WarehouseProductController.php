@@ -49,8 +49,6 @@ class WarehouseProductController extends Controller
             ->where('products.is_active', true)
             ->select(['products.id', 'products.name', 'products.sku', 'products.description']);
 
-        $perPage = max(1, min((int) $request->input('per_page', 10), 100));
-
         $products = QueryBuilder::for($baseQuery)
             ->allowedFilters(
                 AllowedFilter::custom('name', new StartsWithFilter('products.name'))->delimiter(''),
@@ -61,7 +59,7 @@ class WarehouseProductController extends Controller
                 AllowedSort::field('price', 'warehouse_product.price'),
                 AllowedSort::field('stock_quantity', 'warehouse_product.stock_quantity'),
             )
-            ->paginate($perPage)
+            ->paginate($this->perPage($request, default: 10))
             ->withQueryString();
 
         return ProductResource::collection($products);

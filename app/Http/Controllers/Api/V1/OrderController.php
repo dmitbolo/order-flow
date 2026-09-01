@@ -37,9 +37,6 @@ class OrderController extends Controller
     )]
     public function index(Request $request): AnonymousResourceCollection
     {
-        $perPage = min((int) $request->input('per_page', 15), 100)
-                |> (fn ($x) => max(1, $x));
-
         $orders = QueryBuilder::for(
             $request->user()->orders()->getQuery()
         )
@@ -50,7 +47,7 @@ class OrderController extends Controller
             ->allowedIncludes('warehouse', 'items')
             ->allowedSorts('id', 'total_amount', 'created_at')
             ->defaultSort('-created_at')
-            ->paginate($perPage)
+            ->paginate($this->perPage($request, default: 15))
             ->withQueryString();
 
         return OrderResource::collection($orders);
