@@ -137,6 +137,35 @@ test('low stock job sends one aggregated notification for all critical products'
     Notification::assertSentToTimes($admin, LowStockDetectedNotification::class, 1);
 });
 
+test('low stock notifications are suppressed during the configured cooldown', function () {
+    Notification::fake();
+    $admin = User::factory()->admin()->create();
+
+    (new CheckLowStock(
+        orderId: 1,
+        warehouseId: $this->warehouse->id,
+        productIds: [$this->product->id],
+    ))->handle();
+
+    (new CheckLowStock(
+        orderId: 2,
+        warehouseId: $this->warehouse->id,
+        productIds: [$this->product->id],
+    ))->handle();
+
+    Notification::assertSentToTimes($admin, LowStockDetectedNotification::class, 1);
+
+    $this->travel(1)->day();
+
+    (new CheckLowStock(
+        orderId: 3,
+        warehouseId: $this->warehouse->id,
+        productIds: [$this->product->id],
+    ))->handle();
+
+    Notification::assertSentToTimes($admin, LowStockDetectedNotification::class, 2);
+});
+
 test('successful job execution writes a short structured log', function () {
     Notification::fake();
     Log::spy();

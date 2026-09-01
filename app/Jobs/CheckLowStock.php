@@ -9,6 +9,7 @@ use App\Notifications\LowStockDetectedNotification;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Throwable;
 
@@ -53,34 +54,22 @@ class CheckLowStock implements ShouldBeUnique, ShouldQueue
         $this->startTracking();
 
         $threshold = (int) config('inventory.low_stock_threshold');
-        $lowStockPositions = WarehouseProduct::query()
-            ->where('warehouse_id', $this->warehouseId)
-            ->whereIn('product_id', $this->productIds)
-            ->where('stock_quantity', '<=', $threshold)
-            ->orderBy('product_id')
-            ->get();
         $lowStockProductIds = array_values(
-            $lowStockPositions
-                ->map(static fn (WarehouseProduct $position): int => $position->product_id)
+            WarehouseProduct::query()
+                ->where('warehouse_id', $this->warehouseId)
+                ->whereIn('product_id', $this->productIds)
+                ->where('stock_quantity', '<=', $threshold)
+                ->orderBy('product_id')
+                ->pluck('product_id')
+                ->map(static fn (mixed $productId): int => (int) $productId)
                 ->all(),
         );
-        $recipientsCount = 0;
-
-        if ($lowStockProductIds !== []) {
-            $admins = User::query()->where('is_admin', true)->get();
-            $recipientsCount = $admins->count();
-
-            Notification::send($admins, new LowStockDetectedNotification(
-                warehouseId: $this->warehouseId,
-                productIds: $lowStockProductIds,
-                threshold: $threshold,
-            ));
-        }
+        $notificationResult = $this->sendLowStockNotifications($lowStockProductIds, $threshold);
 
         $this->logJobSucceeded([
             ...$this->logContext(),
             'low_stock_product_ids' => $lowStockProductIds,
-            'recipients_count' => $recipientsCount,
+            ...$notificationResult,
         ]);
     }
 
@@ -114,5 +103,94 @@ class CheckLowStock implements ShouldBeUnique, ShouldQueue
             'product_ids' => $this->productIds,
             'dispatched_at' => $this->dispatchedAt,
         ];
+    }
+
+    /**
+     * @param  list<int>  $productIds
+     * @return array{
+     *     notified_product_ids: list<int>,
+     *     cooldown_product_ids: list<int>,
+     *     recipients_count: int
+     * }
+     */
+    private function sendLowStockNotifications(array $productIds, int $threshold): array
+    {
+        if ($productIds === []) {
+            return [
+                'notified_product_ids' => [],
+                'cooldown_product_ids' => [],
+                'recipients_count' => 0,
+            ];
+        }
+
+        $admins = User::query()->where('is_admin', true)->get();
+
+        if ($admins->isEmpty()) {
+            return [
+                'notified_product_ids' => [],
+                'cooldown_product_ids' => [],
+                'recipients_count' => 0,
+            ];
+        }
+
+        $notifiedProductIds = $this->reserveNotificationCooldowns($productIds);
+        $cooldownProductIds = array_values(array_diff($productIds, $notifiedProductIds));
+
+        if ($notifiedProductIds === []) {
+            return [
+                'notified_product_ids' => [],
+                'cooldown_product_ids' => $cooldownProductIds,
+                'recipients_count' => 0,
+            ];
+        }
+
+        try {
+            Notification::send($admins, new LowStockDetectedNotification(
+                warehouseId: $this->warehouseId,
+                productIds: $notifiedProductIds,
+                threshold: $threshold,
+            ));
+        } catch (Throwable $exception) {
+            $this->releaseNotificationCooldowns($notifiedProductIds);
+
+            throw $exception;
+        }
+
+        return [
+            'notified_product_ids' => $notifiedProductIds,
+            'cooldown_product_ids' => $cooldownProductIds,
+            'recipients_count' => $admins->count(),
+        ];
+    }
+
+    /**
+     * @param  list<int>  $productIds
+     * @return list<int>
+     */
+    private function reserveNotificationCooldowns(array $productIds): array
+    {
+        $ttl = max(1, (int) config('inventory.low_stock_notification_cooldown_seconds'));
+        $reservedProductIds = [];
+
+        foreach ($productIds as $productId) {
+            if (Cache::add($this->notificationCooldownKey($productId), true, $ttl)) {
+                $reservedProductIds[] = $productId;
+            }
+        }
+
+        return $reservedProductIds;
+    }
+
+    /** @param list<int> $productIds */
+    private function releaseNotificationCooldowns(array $productIds): void
+    {
+        foreach ($productIds as $productId) {
+            Cache::forget($this->notificationCooldownKey($productId));
+        }
+    }
+
+    private function notificationCooldownKey(int $productId): string
+    {
+        return "inventory:low-stock:warehouse:{$this->warehouseId}:product:{$productId}";
     }
 }
