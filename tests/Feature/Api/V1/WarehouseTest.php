@@ -42,6 +42,29 @@ test('it lists only active warehouses with filtering sorting and pagination', fu
         ->assertJsonPath('meta.per_page', 1);
 });
 
+test('starts-with filters treat SQL wildcard characters literally', function (
+    string $filter,
+    string $matchingName,
+    string $nonMatchingName,
+) {
+    $matchingWarehouse = Warehouse::factory()->create(['name' => $matchingName]);
+    Warehouse::factory()->create(['name' => $nonMatchingName]);
+
+    $query = http_build_query([
+        'filter' => ['name' => $filter],
+    ]);
+
+    $this->actingAs($this->user)
+        ->getJson("/api/v1/warehouses?{$query}")
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $matchingWarehouse->id);
+})->with([
+    'percent' => ['A%', 'A% Warehouse', 'Apple Warehouse'],
+    'underscore' => ['A_', 'A_ Warehouse', 'AB Warehouse'],
+    'escape character' => ['A!', 'A! Warehouse', 'A Warehouse'],
+]);
+
 test('it returns an active warehouse and hides inactive or missing warehouses', function () {
     $this->actingAs($this->user)
         ->getJson("/api/v1/warehouses/{$this->activeWarehouse->id}")

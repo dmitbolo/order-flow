@@ -53,8 +53,8 @@ class WarehouseProductController extends Controller
 
         $products = QueryBuilder::for($baseQuery)
             ->allowedFilters(
-                AllowedFilter::custom('name', new StartsWithFilter('products.name')),
-                AllowedFilter::custom('sku', new StartsWithFilter('products.sku')),
+                AllowedFilter::custom('name', new StartsWithFilter('products.name'))->delimiter(''),
+                AllowedFilter::custom('sku', new StartsWithFilter('products.sku'))->delimiter(''),
             )
             ->allowedSorts(
                 AllowedSort::field('name', 'products.name'),

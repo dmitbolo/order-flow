@@ -38,8 +38,8 @@ class WarehouseController extends Controller
 
         $warehouses = QueryBuilder::for(Warehouse::query()->where('is_active', true))
             ->allowedFilters(
-                AllowedFilter::custom('name', new StartsWithFilter('warehouses.name')),
-                AllowedFilter::custom('code', new StartsWithFilter('warehouses.code')),
+                AllowedFilter::custom('name', new StartsWithFilter('warehouses.name'))->delimiter(''),
+                AllowedFilter::custom('code', new StartsWithFilter('warehouses.code'))->delimiter(''),
             )
             ->allowedSorts('name', 'code', 'created_at')
             ->defaultSort('name')
