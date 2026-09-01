@@ -1,58 +1,123 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Order Flow
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![PHP 8.5](https://img.shields.io/badge/PHP-8.5-777BB4?logo=php&logoColor=white)
+![Laravel 13](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)
 
-## About Laravel
+Order Flow — Laravel-приложение для управления заказами и складскими остатками. В проекте есть REST API, панель оператора, журнал движений товара и фоновые уведомления.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+При создании заказа товар резервируется в транзакции. При отмене остаток возвращается, а каждое изменение сохраняется в журнале.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Что реализовано
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- REST API v1 с Sanctum, фильтрацией, сортировкой и OpenAPI-документацией;
+- создание, обработка, завершение и отмена заказов;
+- атомарное резервирование и возврат товара;
+- журнал движений с остатками до и после операции;
+- Filament-панель для работы с каталогом, заказами и складом;
+- Redis/Horizon для уведомлений, Telescope и `X-Operation-ID` для диагностики.
 
-## Learning Laravel
+## Как устроено
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Транзакционная целостность складских остатков
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Создание и отмена заказа выполняются в PostgreSQL-транзакции. Строки остатков блокируются через `SELECT ... FOR UPDATE` в одинаковом порядке, а ограничения базы не позволяют сохранить отрицательный остаток или некорректное движение.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Аудит складских операций
 
-## Agentic Development
+Списание, возврат и ручная корректировка записываются в `stock_movements`: с количеством до и после операции, заказом, типом движения и пользователем.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Асинхронная обработка уведомлений
 
-```bash
-composer require laravel/boost --dev
+Фоновые задачи запускаются после commit. Ошибка почты или очереди не откатывает уже созданный заказ; для повторных попыток настроены retries, backoff и защита от дубликатов.
 
-php artisan boost:install
+```mermaid
+flowchart LR
+    Client[API client] --> API[REST API]
+    Operator[Оператор] --> Admin[Filament]
+    API --> Actions[Domain actions]
+    Admin --> Actions
+    Actions --> DB[(PostgreSQL)]
+    Actions -- after commit --> Redis[(Redis)]
+    Redis --> Jobs[Horizon workers]
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Стек
 
-## Contributing
+| Область | Технологии |
+| --- | --- |
+| Backend | PHP 8.5, Laravel 13 |
+| Данные | PostgreSQL 18, Redis |
+| API | REST, Sanctum, OpenAPI, Spatie Query Builder |
+| Панель оператора | Filament 5 |
+| Фоновые задачи | Laravel Queue, Horizon |
+| Качество | Pest, Larastan, Pint, GitHub Actions |
+| Локальная среда | Docker Compose, Laravel Sail, Mailpit |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Запуск
 
-## Code of Conduct
+Понадобятся Git, Docker и Docker Compose v2. PHP и Composer на хосте не требуются: зависимости устанавливаются Composer, включённым в образ с PHP 8.5.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+На Windows используйте Docker Desktop с включённой WSL-интеграцией. Храните проект в файловой системе WSL, например в `~/projects`, а не в `/mnt/c` или `/mnt/d`. Все команды ниже выполняются в терминале WSL.
 
-## Security Vulnerabilities
+```bash
+mkdir -p ~/projects
+cd ~/projects
+git clone https://github.com/dmitbolo/order-flow.git
+cd order-flow
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+cp .env.example .env
 
-## License
+export WWWUSER="$(id -u)"
+export WWWGROUP="$(id -g)"
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+docker compose run --rm --build --no-deps laravel.test \
+  composer install --no-interaction --prefer-dist
+docker compose up -d --wait
+docker compose exec -T laravel.test php artisan key:generate
+docker compose exec -T laravel.test php artisan migrate --seed
+```
+
+Seeder создаёт администратора и готовый набор данных: склады, товары, остатки, заказы в разных статусах и согласованный журнал движений.
+
+```text
+Email:    test@example.com
+Password: password
+```
+
+| Сервис | Адрес |
+| --- | --- |
+| Главная | <http://localhost> |
+| Панель оператора | <http://localhost/admin> |
+| Swagger UI | <http://localhost/api/documentation> |
+| Horizon | <http://localhost/horizon> |
+| Telescope | <http://localhost/telescope> |
+| Mailpit | <http://localhost:8025> |
+
+Демо-доступ предназначен только для локального окружения. Чтобы вернуть исходный набор данных, выполните `docker compose exec -T laravel.test php artisan migrate:fresh --seed`. Команда удалит существующие данные.
+
+## Пример API-запроса
+
+```bash
+curl -X POST http://localhost/api/v1/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password"}'
+```
+
+В ответ придёт Sanctum token. Остальные запросы и схемы ответов доступны в Swagger UI.
+
+## Проверка
+
+```bash
+docker compose exec -T laravel.test composer check
+```
+
+Команда запускает Pint, Larastan level 7 и все Pest-тесты.
+
+## Куда смотреть в коде
+
+- [`CreateOrderAction`](app/Actions/Orders/CreateOrderAction.php) — создание заказа и резервирование товара;
+- [`LockStockAction`](app/Actions/Stock/LockStockAction.php) — блокировка и проверка остатков;
+- [`ApplyStockMovementAction`](app/Actions/Stock/ApplyStockMovementAction.php) — изменение остатка и запись в журнал;
+- [`CheckLowStock`](app/Jobs/CheckLowStock.php) — проверка критических остатков в очереди;
+- [`DemoDataSeeder`](database/seeders/DemoDataSeeder.php) — воспроизводимый демонстрационный набор;
+- [`OrderCreatedWorkflowTest`](tests/Feature/Orders/OrderCreatedWorkflowTest.php) — проверка after-commit сценариев и сбоев инфраструктуры.

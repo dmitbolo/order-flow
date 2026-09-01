@@ -1,8 +1,9 @@
 {
-    "name": "laravel/laravel",
+    "name": "dmitbolo/order-flow",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Order and inventory management backend with transactional stock control.",
+    "keywords": ["inventory", "laravel", "order-management", "postgresql", "redis", "rest-api", "warehouse"],
+    "homepage": "https://github.com/dmitbolo/order-flow",
     "license": "MIT",
     "require": {
         "php": "^8.5",
