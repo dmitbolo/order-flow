@@ -111,7 +111,7 @@ class Order extends Model
         $order = self::create([
             'user_id' => $user->id,
             'warehouse_id' => $warehouse->id,
-            'status' => 'pending',
+            'status' => OrderStatus::Pending,
             'total_amount' => $totalAmount,
             'notes' => $data->notes,
         ]);
