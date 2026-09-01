@@ -14,7 +14,7 @@ beforeEach(function () {
     ]);
 });
 
-test('пользователь может успешно авторизоваться с правильными данными', function () {
+test('user can log in with valid credentials', function () {
     $response = $this->postJson('/api/v1/login', [
         'email' => 'test2@example.com',
         'password' => 'password123',
@@ -27,17 +27,25 @@ test('пользователь может успешно авторизоват�
         ]);
 });
 
-test('возвращается ошибка валидации при неверном пароле', function () {
-    $response = $this->postJson('/api/v1/login', [
+test('login does not reveal whether an email exists', function () {
+    $wrongPasswordResponse = $this->postJson('/api/v1/login', [
         'email' => 'test2@example.com',
         'password' => 'wrong-password',
     ]);
+    $missingEmailResponse = $this->postJson('/api/v1/login', [
+        'email' => 'missing@example.com',
+        'password' => 'wrong-password',
+    ]);
 
-    $response->assertStatus(422)
+    $wrongPasswordResponse->assertUnprocessable()
         ->assertJsonValidationErrors(['email']);
+    $missingEmailResponse->assertUnprocessable()
+        ->assertJsonValidationErrors(['email']);
+
+    expect($missingEmailResponse->json())->toBe($wrongPasswordResponse->json());
 });
 
-test('возвращается ошибка валидации при передаче пустых полей', function () {
+test('login validates empty credentials', function () {
     $response = $this->postJson('/api/v1/login', [
         'email' => '',
         'password' => '',
@@ -47,7 +55,7 @@ test('возвращается ошибка валидации при перед
         ->assertJsonValidationErrors(['email', 'password']);
 });
 
-test('авторизованный пользователь может получить информацию о себе', function () {
+test('authenticated user can view their profile', function () {
     Sanctum::actingAs($this->user);
 
     $response = $this->getJson('/api/v1/me');
@@ -62,14 +70,14 @@ test('авторизованный пользователь может полу�
         ]);
 });
 
-test('гость не может получить доступ к /me без токена', function () {
+test('guest cannot view a profile without a token', function () {
     $response = $this->getJson('/api/v1/me');
 
     $response->assertUnauthorized()
         ->assertJsonPath('error_code', 'UNAUTHENTICATED');
 });
 
-test('авторизованный пользователь может выйти из системы', function () {
+test('authenticated user can log out', function () {
     Sanctum::actingAs($this->user);
 
     $response = $this->postJson('/api/v1/logout');
@@ -78,15 +86,6 @@ test('авторизованный пользователь может выйт�
         ->assertJson([
             'message' => 'Успешный выход из системы',
         ]);
-
-    expect($this->user->tokens()->count())->toBe(0);
-});
-
-test('login does not reveal whether an email exists', function () {
-    $this->postJson('/api/v1/login', [
-        'email' => 'missing@example.com',
-        'password' => 'password123',
-    ])->assertUnprocessable()->assertJsonValidationErrors(['email']);
 });
 
 test('a token issued at login grants access and is revoked at logout', function () {

@@ -22,7 +22,7 @@ class WarehouseProductFactory extends Factory
         return [
             'warehouse_id' => Warehouse::factory(),
             'product_id' => Product::factory(),
-            'price' => $this->faker->numberBetween(1000, 500000), // Цена от 10.00 до 5000.00 у.е. (в копейках/центах)
+            'price' => $this->faker->numberBetween(1000, 500000), // Price from 10.00 to 5000.00 in minor currency units.
             'stock_quantity' => $this->faker->numberBetween(0, 150),
         ];
     }

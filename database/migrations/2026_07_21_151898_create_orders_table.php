@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('warehouse_id')->constrained()->restrictOnDelete(); // Склад, с которого оформлен заказ
+            $table->foreignId('warehouse_id')->constrained()->restrictOnDelete();
             $table->enum('status', array_column(OrderStatus::cases(), 'value'))->default(OrderStatus::Pending->value);
             $table->unsignedInteger('total_amount')->default(0);
             $table->text('notes')->nullable();

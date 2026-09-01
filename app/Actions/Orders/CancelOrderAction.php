@@ -24,19 +24,15 @@ class CancelOrderAction
      */
     public function execute(Order $order, User $actor): Order
     {
-        if ($order->status !== OrderStatus::Pending) {
-            throw new OrderCannotBeCanceledException;
-        }
-
         return DB::transaction(function () use ($order, $actor) {
-            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
 
-            if ($order->status !== OrderStatus::Pending) {
+            if ($lockedOrder->status !== OrderStatus::Pending) {
                 throw new OrderCannotBeCanceledException;
             }
 
             // Prevent deadlocks by always locking rows in the same order.
-            $items = $order->items()
+            $items = $lockedOrder->items()
                 ->select('product_id', DB::raw('SUM(quantity) as quantity'))
                 ->groupBy('product_id')
                 ->orderBy('product_id')
@@ -44,18 +40,18 @@ class CancelOrderAction
 
             $quantities = $items->pluck('quantity', 'product_id')->map(fn ($quantity) => (int) $quantity)->all();
 
-            $lockedStock = $this->lockStock->execute($order->warehouse, $quantities);
+            $lockedStock = $this->lockStock->execute($lockedOrder->warehouse, $quantities);
 
             $this->applyMovement->execute(
                 $lockedStock,
-                StockMovementContext::orderCanceled($order, $actor),
+                StockMovementContext::orderCanceled($lockedOrder, $actor),
             );
 
-            $order->update([
+            $lockedOrder->update([
                 'status' => OrderStatus::Canceled,
             ]);
 
-            return $order->fresh(['warehouse', 'items']);
+            return $lockedOrder->fresh(['warehouse', 'items']);
         });
     }
 }

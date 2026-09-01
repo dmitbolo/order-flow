@@ -12,7 +12,16 @@ enum OrderStatus: string implements HasColor, HasLabel
     case Canceled = 'canceled';
     case Completed = 'completed';
 
-    // Человекочитаемые названия статусов для UI или ответов API
+    public function canTransitionTo(self $target): bool
+    {
+        return match ($this) {
+            self::Pending => $target === self::Processing,
+            self::Processing => $target === self::Completed,
+            self::Canceled, self::Completed => false,
+        };
+    }
+
+    // Human-readable labels for UI and API responses.
     public function label(): string
     {
         return match ($this) {

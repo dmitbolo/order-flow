@@ -6,7 +6,7 @@ use App\Exceptions\AppException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Товар ID {$productId} не привязан к данному складу
+ * The requested product is not attached to the warehouse.
  */
 class ProductNotAttachedException extends AppException
 {

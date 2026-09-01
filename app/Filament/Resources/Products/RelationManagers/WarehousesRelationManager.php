@@ -50,7 +50,7 @@ class WarehousesRelationManager extends RelationManager
                     ->badge(),
                 TextColumn::make('pivot.price')
                     ->label('Цена')
-                    ->money('RUB', divideBy: 100) // В зависимости от нужной валюты
+                    ->money('RUB', divideBy: 100) // Adjust the currency when needed.
                     ->sortable(),
                 TextColumn::make('pivot.stock_quantity')
                     ->label('Остаток')

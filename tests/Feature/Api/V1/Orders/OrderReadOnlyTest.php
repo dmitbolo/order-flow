@@ -27,7 +27,7 @@ beforeEach(function () {
         'warehouse_id' => $this->warehouse->id,
         'status' => OrderStatus::Completed,
         'total_amount' => 1500.00,
-        'created_at' => now(), // Самый свежий заказ
+        'created_at' => now(), // Newest order.
     ]);
 
     $this->foreignOrder = Order::factory()->create([
@@ -42,11 +42,11 @@ test('it returns only the authenticated users orders sorted by newest by default
     $response->assertStatus(Response::HTTP_OK)
         ->assertJsonCount(2, 'data');
 
-    // Проверяем defaultSort('-created_at'): первым должен идти Completed, так как он новее
+    // The default -created_at sort must place the completed order first.
     expect($response->json('data.0.id'))->toBe($this->completedOrder->id)
         ->and($response->json('data.1.id'))->toBe($this->pendingOrder->id);
 
-    // Убеждаемся, что чужой заказ не утек в ответ
+    // Orders belonging to another user must not leak into the response.
     $idsInResponse = collect($response->json('data'))->pluck('id');
     expect($idsInResponse)->not->toContain($this->foreignOrder->id);
 });
@@ -124,8 +124,19 @@ test('it normalizes a non-positive per_page parameter to one', function () {
 });
 
 test('it rejects unallowed filters and sorts', function () {
-    $this->actingAs($this->user)->getJson('/api/v1/orders?filter[user_id]=1')->assertBadRequest();
-    $this->actingAs($this->user)->getJson('/api/v1/orders?sort=user_id')->assertBadRequest();
+    $this->actingAs($this->user)
+        ->getJson('/api/v1/orders?filter[user_id]=1')
+        ->assertBadRequest()
+        ->assertJsonPath('status', 'error')
+        ->assertJsonPath('error_code', 'INVALID_QUERY_PARAMETER')
+        ->assertJsonStructure(['status', 'error_code', 'message']);
+
+    $this->actingAs($this->user)
+        ->getJson('/api/v1/orders?sort=user_id')
+        ->assertBadRequest()
+        ->assertJsonPath('status', 'error')
+        ->assertJsonPath('error_code', 'INVALID_QUERY_PARAMETER')
+        ->assertJsonStructure(['status', 'error_code', 'message']);
 });
 
 test('it loads allowed includes for a single order', function () {
@@ -149,15 +160,18 @@ test('it returns 400 when trying to include an unallowed relation', function () 
     $response = $this->actingAs($this->user)
         ->getJson("/api/v1/orders/{$this->pendingOrder->id}?include=unallowedRelation");
 
-    $response->assertStatus(Response::HTTP_BAD_REQUEST);
+    $response
+        ->assertStatus(Response::HTTP_BAD_REQUEST)
+        ->assertJsonPath('status', 'error')
+        ->assertJsonPath('error_code', 'INVALID_QUERY_PARAMETER')
+        ->assertJsonStructure(['status', 'error_code', 'message']);
 });
 
 test('it returns 404 when trying to view another users order', function () {
     $response = $this->actingAs($this->user)
         ->getJson("/api/v1/orders/{$this->foreignOrder->id}");
 
-    // Так как используется findOrFail внутри области видимости user_id,
-    // чужой заказ вернет честный 404 Not Found вместо 403, скрывая факт его существования
+    // Scoping findOrFail by user_id hides the existence of another user's order behind a 404.
     $response->assertStatus(Response::HTTP_NOT_FOUND);
 });
 

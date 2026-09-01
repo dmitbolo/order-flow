@@ -12,9 +12,9 @@ class InsufficientStockException extends AppException
     public int $statusCode = Response::HTTP_UNPROCESSABLE_ENTITY;
 
     /**
-     * @param  int  $productId  Идентификатор товара.
-     * @param  int  $requestedQuantity  Сколько единиц товара было запрошено.
-     * @param  int  $availableQuantity  Сколько единиц фактически доступно на складе.
+     * @param  int  $productId  Product identifier.
+     * @param  int  $requestedQuantity  Requested product quantity.
+     * @param  int  $availableQuantity  Available product quantity.
      */
     public function __construct(
         public readonly int $productId,

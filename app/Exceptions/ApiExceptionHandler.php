@@ -5,8 +5,11 @@ namespace App\Exceptions;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Spatie\QueryBuilder\Exceptions\InvalidFilterValue;
+use Spatie\QueryBuilder\Exceptions\InvalidQuery;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -16,7 +19,7 @@ use Throwable;
 class ApiExceptionHandler
 {
     /**
-     * Регистрирует все кастомные обработчики для API.
+     * Register all custom API exception renderers.
      */
     public static function configure(Exceptions $exceptions): void
     {
@@ -26,6 +29,7 @@ class ApiExceptionHandler
 
         self::registerNotFoundHandler($exceptions);
         self::registerValidationHandler($exceptions);
+        self::registerQueryParameterHandlers($exceptions);
         self::registerAuthHandlers($exceptions);
         self::registerAppExceptionHandler($exceptions);
         self::registerFallbackHandler($exceptions);
@@ -68,6 +72,29 @@ class ApiExceptionHandler
                 'errors' => $e->errors(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         });
+    }
+
+    private static function registerQueryParameterHandlers(Exceptions $exceptions): void
+    {
+        $exceptions->render(
+            fn (InvalidQuery $e, Request $request) => self::renderInvalidQuery($request, $e->getMessage()),
+        );
+        $exceptions->render(
+            fn (InvalidFilterValue $e, Request $request) => self::renderInvalidQuery($request, $e->getMessage()),
+        );
+    }
+
+    private static function renderInvalidQuery(Request $request, string $message): ?JsonResponse
+    {
+        if (! $request->is('api/*')) {
+            return null;
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'error_code' => 'INVALID_QUERY_PARAMETER',
+            'message' => $message,
+        ], Response::HTTP_BAD_REQUEST);
     }
 
     private static function registerAuthHandlers(Exceptions $exceptions): void

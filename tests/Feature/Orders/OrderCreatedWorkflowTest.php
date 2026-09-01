@@ -137,6 +137,67 @@ test('low stock job sends one aggregated notification for all critical products'
     Notification::assertSentToTimes($admin, LowStockDetectedNotification::class, 1);
 });
 
+test('low stock notifications are suppressed during the configured cooldown', function () {
+    Notification::fake();
+    $admin = User::factory()->admin()->create();
+
+    (new CheckLowStock(
+        orderId: 1,
+        warehouseId: $this->warehouse->id,
+        productIds: [$this->product->id],
+    ))->handle();
+
+    (new CheckLowStock(
+        orderId: 2,
+        warehouseId: $this->warehouse->id,
+        productIds: [$this->product->id],
+    ))->handle();
+
+    Notification::assertSentToTimes($admin, LowStockDetectedNotification::class, 1);
+
+    $this->travel(1)->day();
+
+    (new CheckLowStock(
+        orderId: 3,
+        warehouseId: $this->warehouse->id,
+        productIds: [$this->product->id],
+    ))->handle();
+
+    Notification::assertSentToTimes($admin, LowStockDetectedNotification::class, 2);
+});
+
+test('failed low stock notification releases the cooldown for retry', function () {
+    User::factory()->admin()->create();
+    $sendAttempts = 0;
+
+    Notification::shouldReceive('send')
+        ->twice()
+        ->andReturnUsing(function () use (&$sendAttempts): void {
+            $sendAttempts++;
+
+            if ($sendAttempts === 1) {
+                throw new RuntimeException('Notification service unavailable');
+            }
+        });
+
+    $firstAttempt = new CheckLowStock(
+        orderId: 1,
+        warehouseId: $this->warehouse->id,
+        productIds: [$this->product->id],
+    );
+
+    expect(fn () => $firstAttempt->handle())
+        ->toThrow(RuntimeException::class, 'Notification service unavailable');
+
+    (new CheckLowStock(
+        orderId: 2,
+        warehouseId: $this->warehouse->id,
+        productIds: [$this->product->id],
+    ))->handle();
+
+    expect($sendAttempts)->toBe(2);
+});
+
 test('successful job execution writes a short structured log', function () {
     Notification::fake();
     Log::spy();

@@ -18,7 +18,7 @@ class TransitionOrderStatusAction
         return DB::transaction(function () use ($order, $targetStatus): Order {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
 
-            if (! $this->isAllowed($lockedOrder->status, $targetStatus)) {
+            if (! $lockedOrder->status->canTransitionTo($targetStatus)) {
                 throw new InvalidOrderStatusTransitionException($lockedOrder->status, $targetStatus);
             }
 
@@ -26,14 +26,5 @@ class TransitionOrderStatusAction
 
             return $lockedOrder->fresh(['warehouse', 'items']);
         });
-    }
-
-    private function isAllowed(OrderStatus $from, OrderStatus $to): bool
-    {
-        return match ($from) {
-            OrderStatus::Pending => $to === OrderStatus::Processing,
-            OrderStatus::Processing => $to === OrderStatus::Completed,
-            OrderStatus::Canceled, OrderStatus::Completed => false,
-        };
     }
 }

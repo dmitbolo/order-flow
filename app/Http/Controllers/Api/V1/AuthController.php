@@ -21,7 +21,7 @@ class AuthController extends Controller
         tags: ['Authentication'],
         responses: [
             new OA\Response(response: 200, description: 'Token issued', content: new OA\JsonContent(ref: '#/components/schemas/LoginResponse')),
-            new OA\Response(response: 422, description: 'Invalid credentials or request', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+            new OA\Response(ref: '#/components/responses/ValidationError', response: 422),
         ],
     )]
     public function login(LoginRequest $request, LoginUserAction $action): JsonResponse
@@ -38,7 +38,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Получить информацию о текущем авторизованном пользователе.
+     * Get the currently authenticated user.
      */
     #[OA\Get(
         path: '/me',
@@ -46,7 +46,7 @@ class AuthController extends Controller
         security: [['sanctum' => []]],
         tags: ['Authentication'],
         responses: [
-            new OA\Response(response: 200, description: 'Current user', content: new OA\JsonContent(properties: [new OA\Property(property: 'data', ref: '#/components/schemas/User')])),
+            new OA\Response(response: 200, description: 'Current user', content: new OA\JsonContent(required: ['data'], properties: [new OA\Property(property: 'data', ref: '#/components/schemas/User')], type: 'object')),
             new OA\Response(ref: '#/components/responses/UnauthorizedError', response: 401),
         ],
     )]
@@ -56,7 +56,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Выход из системы (отзыв текущего токена).
+     * Log out by revoking the current access token.
      */
     #[OA\Post(
         path: '/logout',

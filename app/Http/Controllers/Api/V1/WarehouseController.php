@@ -24,26 +24,24 @@ class WarehouseController extends Controller
             new OA\Parameter(name: 'filter[code]', in: 'query', schema: new OA\Schema(type: 'string', example: 'MSK')),
             new OA\Parameter(name: 'sort', description: 'Available: name, code, created_at. Use - for descending.', in: 'query', schema: new OA\Schema(type: 'string', example: 'name')),
             new OA\Parameter(name: 'page', description: 'Page number.', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1, default: 1, example: 1)),
-            new OA\Parameter(name: 'per_page', description: 'Items per page.', in: 'query', schema: new OA\Schema(type: 'integer', maximum: 100, minimum: 1, default: 15, example: 15)),
+            new OA\Parameter(name: 'per_page', description: 'Items per page. Values are normalized to the range from 1 to 100.', in: 'query', schema: new OA\Schema(type: 'integer', default: 15, example: 15)),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Active warehouses', content: new OA\JsonContent(properties: [new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/Warehouse')), new OA\Property(property: 'links', ref: '#/components/schemas/PaginationLinks'), new OA\Property(property: 'meta', ref: '#/components/schemas/PaginationMeta')], type: 'object')),
+            new OA\Response(response: 200, description: 'Active warehouses', content: new OA\JsonContent(required: ['data', 'links', 'meta'], properties: [new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/Warehouse')), new OA\Property(property: 'links', ref: '#/components/schemas/PaginationLinks'), new OA\Property(property: 'meta', ref: '#/components/schemas/PaginationMeta')], type: 'object')),
             new OA\Response(response: 400, ref: '#/components/responses/BadRequestError'),
             new OA\Response(ref: '#/components/responses/UnauthorizedError', response: 401),
         ],
     )]
     public function index(Request $request): AnonymousResourceCollection
     {
-        $perPage = max(1, min((int) $request->input('per_page', 15), 100));
-
         $warehouses = QueryBuilder::for(Warehouse::query()->where('is_active', true))
             ->allowedFilters(
-                AllowedFilter::custom('name', new StartsWithFilter('warehouses.name')),
-                AllowedFilter::custom('code', new StartsWithFilter('warehouses.code')),
+                AllowedFilter::custom('name', new StartsWithFilter('warehouses.name'))->delimiter(''),
+                AllowedFilter::custom('code', new StartsWithFilter('warehouses.code'))->delimiter(''),
             )
             ->allowedSorts('name', 'code', 'created_at')
             ->defaultSort('name')
-            ->paginate($perPage)
+            ->paginate($this->perPage($request, default: 15))
             ->withQueryString();
 
         return WarehouseResource::collection($warehouses);
@@ -56,7 +54,7 @@ class WarehouseController extends Controller
         tags: ['Warehouses'],
         parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
         responses: [
-            new OA\Response(response: 200, description: 'Warehouse', content: new OA\JsonContent(type: 'object', properties: [new OA\Property(property: 'data', ref: '#/components/schemas/Warehouse')])),
+            new OA\Response(response: 200, description: 'Warehouse', content: new OA\JsonContent(required: ['data'], properties: [new OA\Property(property: 'data', ref: '#/components/schemas/Warehouse')], type: 'object')),
             new OA\Response(ref: '#/components/responses/UnauthorizedError', response: 401),
             new OA\Response(ref: '#/components/responses/NotFoundError', response: 404),
         ],

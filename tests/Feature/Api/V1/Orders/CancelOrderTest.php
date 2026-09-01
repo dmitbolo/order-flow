@@ -110,21 +110,7 @@ it('returns 401 unauthenticated if the user is not logged in', function () {
     $response->assertStatus(Response::HTTP_UNAUTHORIZED);
 });
 
-it('handles custom business exceptions and passes them through response', function () {
-    $order = Order::factory()->create([
-        'user_id' => $this->user->id,
-        'status' => OrderStatus::Canceled,
-        'warehouse_id' => $this->warehouse->id,
-    ]);
-
-    $response = $this->actingAs($this->user, 'sanctum')
-        ->postJson("/api/v1/orders/{$order->id}/cancel");
-
-    $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
-        ->assertJsonPath('error_code', 'ORDER_CANNOT_BE_CANCELED');
-});
-
-it('cannot cancel an order that is already being processed or completed', function (OrderStatus $status) {
+it('cannot cancel a non-pending order', function (OrderStatus $status) {
     $order = Order::factory()->create([
         'user_id' => $this->user->id,
         'status' => $status,
@@ -135,7 +121,7 @@ it('cannot cancel an order that is already being processed or completed', functi
         ->postJson("/api/v1/orders/{$order->id}/cancel")
         ->assertUnprocessable()
         ->assertJsonPath('error_code', 'ORDER_CANNOT_BE_CANCELED');
-})->with([OrderStatus::Processing, OrderStatus::Completed]);
+})->with([OrderStatus::Processing, OrderStatus::Canceled, OrderStatus::Completed]);
 
 it('returns 404 when cancelling an order that does not exist', function () {
     $this->actingAs($this->user, 'sanctum')
@@ -160,12 +146,14 @@ it('rolls back database changes if an unexpected error occurs during cancellatio
         throw new RuntimeException('Simulated database crash');
     });
 
-    $response = $this->actingAs($this->user, 'sanctum')
-        ->postJson("/api/v1/orders/{$order->id}/cancel");
+    try {
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->postJson("/api/v1/orders/{$order->id}/cancel");
 
-    $response->assertStatus(Response::HTTP_INTERNAL_SERVER_ERROR);
-
-    Order::flushEventListeners();
+        $response->assertStatus(Response::HTTP_INTERNAL_SERVER_ERROR);
+    } finally {
+        Order::flushEventListeners();
+    }
 
     $actualStockInDb = DB::table('warehouse_product')
         ->where('warehouse_id', $this->warehouse->id)

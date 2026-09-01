@@ -16,7 +16,7 @@ beforeEach(function () {
     ]);
     $this->inactiveWarehouse = Warehouse::factory()->create([
         'name' => 'Central Inactive Warehouse',
-        'code' => 'ZINACTIVE',
+        'code' => 'ZZZ-INACTIVE',
         'is_active' => false,
     ]);
 });
@@ -28,9 +28,9 @@ test('a guest cannot access warehouse endpoints', function () {
 });
 
 test('it lists only active warehouses with filtering sorting and pagination', function () {
-    Warehouse::factory()->create([
-        'name' => 'North Warehouse',
-        'code' => 'NORTH',
+    $sortedWarehouse = Warehouse::factory()->create([
+        'name' => 'Central Secondary Warehouse',
+        'code' => 'ZZZ-ACTIVE',
     ]);
 
     $response = $this->actingAs($this->user)
@@ -38,9 +38,32 @@ test('it lists only active warehouses with filtering sorting and pagination', fu
 
     $response->assertOk()
         ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.id', $this->activeWarehouse->id)
+        ->assertJsonPath('data.0.id', $sortedWarehouse->id)
         ->assertJsonPath('meta.per_page', 1);
 });
+
+test('starts-with filters treat SQL wildcard characters literally', function (
+    string $filter,
+    string $matchingName,
+    string $nonMatchingName,
+) {
+    $matchingWarehouse = Warehouse::factory()->create(['name' => $matchingName]);
+    Warehouse::factory()->create(['name' => $nonMatchingName]);
+
+    $query = http_build_query([
+        'filter' => ['name' => $filter],
+    ]);
+
+    $this->actingAs($this->user)
+        ->getJson("/api/v1/warehouses?{$query}")
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $matchingWarehouse->id);
+})->with([
+    'percent' => ['A%', 'A% Warehouse', 'Apple Warehouse'],
+    'underscore' => ['A_', 'A_ Warehouse', 'AB Warehouse'],
+    'escape character' => ['A!', 'A! Warehouse', 'A Warehouse'],
+]);
 
 test('it returns an active warehouse and hides inactive or missing warehouses', function () {
     $this->actingAs($this->user)
@@ -68,6 +91,10 @@ test('it rejects unallowed warehouse filters and sorts', function () {
 });
 
 test('it lists only active products of an active warehouse with pivot data', function () {
+    $lowerStockProduct = Product::factory()->create([
+        'name' => 'Apple Sauce',
+        'sku' => 'APPLE-000',
+    ]);
     $availableProduct = Product::factory()->create([
         'name' => 'Apple Juice',
         'sku' => 'APPLE-001',
@@ -76,9 +103,14 @@ test('it lists only active products of an active warehouse with pivot data', fun
         'sku' => 'APPLE-INACTIVE',
         'is_active' => false,
     ]);
-    $otherWarehouseProduct = Product::factory()->create();
+    $otherWarehouseProduct = Product::factory()->create(['sku' => 'APPLE-OTHER']);
     $otherWarehouse = Warehouse::factory()->create();
 
+    WarehouseProduct::factory()->create([
+        'warehouse_id' => $this->activeWarehouse->id,
+        'product_id' => $lowerStockProduct->id,
+        'stock_quantity' => 2,
+    ]);
     WarehouseProduct::factory()->create([
         'warehouse_id' => $this->activeWarehouse->id,
         'product_id' => $availableProduct->id,
@@ -88,17 +120,19 @@ test('it lists only active products of an active warehouse with pivot data', fun
     WarehouseProduct::factory()->create([
         'warehouse_id' => $this->activeWarehouse->id,
         'product_id' => $inactiveProduct->id,
+        'stock_quantity' => 100,
     ]);
     WarehouseProduct::factory()->create([
         'warehouse_id' => $otherWarehouse->id,
         'product_id' => $otherWarehouseProduct->id,
+        'stock_quantity' => 200,
     ]);
 
     $response = $this->actingAs($this->user)
         ->getJson("/api/v1/warehouses/{$this->activeWarehouse->id}/products?filter[sku]=APPLE&sort=-stock_quantity");
 
     $response->assertOk()
-        ->assertJsonCount(1, 'data')
+        ->assertJsonCount(2, 'data')
         ->assertJsonPath('data.0.id', $availableProduct->id)
         ->assertJsonPath('data.0.price', 199)
         ->assertJsonPath('data.0.stock_quantity', 7);
