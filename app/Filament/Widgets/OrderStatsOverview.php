@@ -7,6 +7,7 @@ use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrderStatsOverview extends StatsOverviewWidget
 {
@@ -16,12 +17,43 @@ class OrderStatsOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $completedTodayQuery = Order::query()
-            ->where('status', OrderStatus::Completed)
-            ->whereDate('updated_at', today());
+        $dayStart = today();
+        $nextDayStart = $dayStart->copy()->addDay();
 
-        $completedTodayCount = (clone $completedTodayQuery)->count();
-        $completedTodayAmount = (int) (clone $completedTodayQuery)->sum('total_amount');
+        $orderStats = Order::query()
+            ->selectRaw(
+                <<<'SQL'
+                    COUNT(CASE WHEN status = ? THEN 1 END) AS pending_count,
+                    COUNT(CASE WHEN status = ? THEN 1 END) AS processing_count,
+                    COUNT(CASE WHEN status = ? THEN 1 END) AS completed_today_count,
+                    COALESCE(SUM(CASE WHEN status = ? THEN total_amount ELSE 0 END), 0) AS completed_today_amount
+                SQL,
+                [
+                    OrderStatus::Pending->value,
+                    OrderStatus::Processing->value,
+                    OrderStatus::Completed->value,
+                    OrderStatus::Completed->value,
+                ],
+            )
+            ->where(function (Builder $query) use ($dayStart, $nextDayStart): void {
+                $query
+                    ->whereIn('status', [
+                        OrderStatus::Pending->value,
+                        OrderStatus::Processing->value,
+                    ])
+                    ->orWhere(function (Builder $query) use ($dayStart, $nextDayStart): void {
+                        $query
+                            ->where('status', OrderStatus::Completed->value)
+                            ->where('updated_at', '>=', $dayStart)
+                            ->where('updated_at', '<', $nextDayStart);
+                    });
+            })
+            ->firstOrFail();
+
+        $pendingCount = (int) $orderStats->getAttribute('pending_count');
+        $processingCount = (int) $orderStats->getAttribute('processing_count');
+        $completedTodayCount = (int) $orderStats->getAttribute('completed_today_count');
+        $completedTodayAmount = (int) $orderStats->getAttribute('completed_today_amount');
         $pendingOrdersUrl = $this->getOrdersUrl(OrderStatus::Pending);
         $processingOrdersUrl = $this->getOrdersUrl(OrderStatus::Processing);
         $completedOrdersUrl = $this->getOrdersUrl(OrderStatus::Completed);
@@ -29,7 +61,7 @@ class OrderStatsOverview extends StatsOverviewWidget
         return [
             Stat::make(
                 'Ожидают обработки',
-                Order::query()->where('status', OrderStatus::Pending)->count(),
+                $pendingCount,
             )
                 ->description('Новые заказы')
                 ->descriptionIcon('heroicon-m-clock')
@@ -38,7 +70,7 @@ class OrderStatsOverview extends StatsOverviewWidget
 
             Stat::make(
                 'В обработке',
-                Order::query()->where('status', OrderStatus::Processing)->count(),
+                $processingCount,
             )
                 ->description('Требуют завершения')
                 ->descriptionIcon('heroicon-m-arrow-path')
