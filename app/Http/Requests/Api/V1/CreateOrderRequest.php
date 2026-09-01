@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\DTO\CreateOrderData;
+use App\DTO\OrderItemData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateOrderRequest extends FormRequest
@@ -9,6 +11,21 @@ class CreateOrderRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    public function toDto(): CreateOrderData
+    {
+        /** @var array{warehouse_id: int|string, items: list<array{product_id: int|string, quantity: int|string}>, notes?: string|null} $validated */
+        $validated = $this->validated();
+
+        return new CreateOrderData(
+            warehouseId: (int) $validated['warehouse_id'],
+            items: array_map(
+                static fn (array $item): OrderItemData => OrderItemData::fromArray($item),
+                $validated['items'],
+            ),
+            notes: $validated['notes'] ?? null,
+        );
     }
 
     /** @return array<string, list<string>> */

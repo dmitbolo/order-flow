@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Orders\CancelOrderAction;
 use App\Actions\Orders\CreateOrderAction;
-use App\DTO\CreateOrderData;
 use App\Exceptions\Orders\OrderCannotBeCanceledException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\CreateOrderRequest;
@@ -93,11 +92,9 @@ class OrderController extends Controller
     )]
     public function store(CreateOrderRequest $request, CreateOrderAction $action): JsonResponse
     {
-        $dto = CreateOrderData::fromRequest($request);
-
         $order = $action->execute(
             user: $request->user(),
-            data: $dto,
+            data: $request->toDto(),
         );
 
         return response()->json([
