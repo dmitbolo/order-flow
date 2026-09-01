@@ -41,14 +41,7 @@
                         }
                     },
                     "422": {
-                        "description": "Invalid credentials or request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
+                        "$ref": "#/components/responses/ValidationError"
                     }
                 }
             }
@@ -67,6 +60,9 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "data"
+                                    ],
                                     "properties": {
                                         "data": {
                                             "$ref": "#/components/schemas/User"
@@ -180,13 +176,11 @@
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Items per page.",
+                        "description": "Items per page. Values are normalized to the range from 1 to 100.",
                         "schema": {
                             "type": "integer",
                             "example": 15,
-                            "default": 15,
-                            "maximum": 100,
-                            "minimum": 1
+                            "default": 15
                         }
                     }
                 ],
@@ -196,6 +190,11 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ],
                                     "properties": {
                                         "data": {
                                             "type": "array",
@@ -250,6 +249,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "message",
+                                        "data"
+                                    ],
                                     "properties": {
                                         "message": {
                                             "type": "string"
@@ -271,7 +274,53 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ValidationError"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ApiError"
+                                        }
+                                    ]
+                                },
+                                "examples": {
+                                    "validation": {
+                                        "summary": "Validation error",
+                                        "value": {
+                                            "status": "error",
+                                            "error_code": "VALIDATION_ERROR",
+                                            "message": "Переданные данные не прошли валидацию.",
+                                            "errors": {
+                                                "warehouse_id": [
+                                                    "Укажите склад для оформления заказа."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "insufficient_stock": {
+                                        "summary": "Insufficient stock",
+                                        "value": {
+                                            "status": "error",
+                                            "error_code": "INSUFFICIENT_STOCK",
+                                            "message": "Недостаточно товара (ID: 1) на складе. Требуется: 2, доступно: 1."
+                                        }
+                                    },
+                                    "product_unavailable": {
+                                        "summary": "Product unavailable",
+                                        "value": {
+                                            "status": "error",
+                                            "error_code": "PRODUCT_UNAVAILABLE",
+                                            "message": "Товар ID 1 недоступен для заказа."
+                                        }
+                                    },
+                                    "product_not_attached": {
+                                        "summary": "Product not attached to warehouse",
+                                        "value": {
+                                            "status": "error",
+                                            "error_code": "PRODUCT_NOT_ATTACHED_TO_WAREHOUSE",
+                                            "message": "Товар ID 1 не привязан к данному складу."
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -319,6 +368,9 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "data"
+                                    ],
                                     "properties": {
                                         "data": {
                                             "$ref": "#/components/schemas/Order"
@@ -369,6 +421,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "message",
+                                        "data"
+                                    ],
                                     "properties": {
                                         "message": {
                                             "type": "string"
@@ -393,7 +449,26 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
+                                    "required": [
+                                        "status",
+                                        "error_code",
+                                        "message"
+                                    ],
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "error_code": {
+                                            "type": "string",
+                                            "example": "ORDER_CANNOT_BE_CANCELED"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Нельзя отменить заказ, который уже обработан или отменен."
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -470,12 +545,10 @@
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Items per page.",
+                        "description": "Items per page. Values are normalized to the range from 1 to 100.",
                         "schema": {
                             "type": "integer",
-                            "default": 20,
-                            "maximum": 100,
-                            "minimum": 1
+                            "default": 20
                         }
                     }
                 ],
@@ -485,6 +558,11 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ],
                                     "properties": {
                                         "data": {
                                             "type": "array",
@@ -565,13 +643,11 @@
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Items per page.",
+                        "description": "Items per page. Values are normalized to the range from 1 to 100.",
                         "schema": {
                             "type": "integer",
                             "example": 15,
-                            "default": 15,
-                            "maximum": 100,
-                            "minimum": 1
+                            "default": 15
                         }
                     }
                 ],
@@ -581,6 +657,11 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ],
                                     "properties": {
                                         "data": {
                                             "type": "array",
@@ -637,6 +718,9 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "data"
+                                    ],
                                     "properties": {
                                         "data": {
                                             "$ref": "#/components/schemas/Warehouse"
@@ -717,13 +801,11 @@
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Items per page.",
+                        "description": "Items per page. Values are normalized to the range from 1 to 100.",
                         "schema": {
                             "type": "integer",
                             "example": 10,
-                            "default": 10,
-                            "maximum": 100,
-                            "minimum": 1
+                            "default": 10
                         }
                     }
                 ],
@@ -733,6 +815,11 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ],
                                     "properties": {
                                         "data": {
                                             "type": "array",
@@ -781,7 +868,7 @@
                     "email": {
                         "type": "string",
                         "format": "email",
-                        "example": "jane@example.com"
+                        "example": "test@example.com"
                     },
                     "password": {
                         "type": "string",
@@ -877,15 +964,42 @@
                         "example": "error"
                     },
                     "error_code": {
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "ValidationError": {
+                "required": [
+                    "status",
+                    "error_code",
+                    "message",
+                    "errors"
+                ],
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "example": "error"
+                    },
+                    "error_code": {
                         "type": "string",
                         "example": "VALIDATION_ERROR"
                     },
                     "message": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Переданные данные не прошли валидацию."
                     },
                     "errors": {
                         "type": "object",
-                        "additionalProperties": true
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
                     }
                 },
                 "type": "object"
@@ -957,6 +1071,12 @@
                 "type": "object"
             },
             "PaginationLinks": {
+                "required": [
+                    "first",
+                    "last",
+                    "prev",
+                    "next"
+                ],
                 "properties": {
                     "first": {
                         "type": "string",
@@ -985,7 +1105,6 @@
                 "required": [
                     "url",
                     "label",
-                    "page",
                     "active"
                 ],
                 "properties": {
@@ -1087,6 +1206,7 @@
                     "id",
                     "name",
                     "sku",
+                    "description",
                     "price",
                     "stock_quantity"
                 ],
@@ -1124,11 +1244,13 @@
                     "id",
                     "warehouse",
                     "product",
+                    "order_id",
                     "type",
                     "type_label",
                     "quantity_change",
                     "quantity_before",
                     "quantity_after",
+                    "comment",
                     "created_at"
                 ],
                 "properties": {
@@ -1137,6 +1259,10 @@
                         "example": 1
                     },
                     "warehouse": {
+                        "required": [
+                            "id",
+                            "name"
+                        ],
                         "properties": {
                             "id": {
                                 "type": "integer",
@@ -1150,6 +1276,11 @@
                         "type": "object"
                     },
                     "product": {
+                        "required": [
+                            "id",
+                            "name",
+                            "sku"
+                        ],
                         "properties": {
                             "id": {
                                 "type": "integer",
@@ -1264,7 +1395,26 @@
                 "content": {
                     "application/json": {
                         "schema": {
-                            "$ref": "#/components/schemas/ApiError"
+                            "required": [
+                                "status",
+                                "error_code",
+                                "message"
+                            ],
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "example": "error"
+                                },
+                                "error_code": {
+                                    "type": "string",
+                                    "example": "INVALID_QUERY_PARAMETER"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Requested include(s) `user` are not allowed."
+                                }
+                            },
+                            "type": "object"
                         }
                     }
                 }
@@ -1274,7 +1424,26 @@
                 "content": {
                     "application/json": {
                         "schema": {
-                            "$ref": "#/components/schemas/ApiError"
+                            "required": [
+                                "status",
+                                "error_code",
+                                "message"
+                            ],
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "example": "error"
+                                },
+                                "error_code": {
+                                    "type": "string",
+                                    "example": "RESOURCE_NOT_FOUND"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Запрашиваемая запись не найдена."
+                                }
+                            },
+                            "type": "object"
                         }
                     }
                 }
@@ -1313,7 +1482,17 @@
                 "content": {
                     "application/json": {
                         "schema": {
-                            "$ref": "#/components/schemas/ApiError"
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "example": {
+                            "status": "error",
+                            "error_code": "VALIDATION_ERROR",
+                            "message": "Переданные данные не прошли валидацию.",
+                            "errors": {
+                                "email": [
+                                    "Неверный логин или пароль"
+                                ]
+                            }
                         }
                     }
                 }

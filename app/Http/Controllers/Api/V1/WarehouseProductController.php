@@ -30,10 +30,10 @@ class WarehouseProductController extends Controller
             new OA\Parameter(name: 'filter[sku]', in: 'query', schema: new OA\Schema(type: 'string', example: 'APPLE')),
             new OA\Parameter(name: 'sort', description: 'Available: name, price, stock_quantity. Use - for descending.', in: 'query', schema: new OA\Schema(type: 'string', example: '-stock_quantity')),
             new OA\Parameter(name: 'page', description: 'Page number.', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1, default: 1, example: 1)),
-            new OA\Parameter(name: 'per_page', description: 'Items per page.', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 100, default: 10, example: 10)),
+            new OA\Parameter(name: 'per_page', description: 'Items per page. Values are normalized to the range from 1 to 100.', in: 'query', schema: new OA\Schema(type: 'integer', default: 10, example: 10)),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Warehouse products', content: new OA\JsonContent(type: 'object', properties: [new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/WarehouseProduct')), new OA\Property(property: 'links', ref: '#/components/schemas/PaginationLinks'), new OA\Property(property: 'meta', ref: '#/components/schemas/PaginationMeta')])),
+            new OA\Response(response: 200, description: 'Warehouse products', content: new OA\JsonContent(required: ['data', 'links', 'meta'], properties: [new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/WarehouseProduct')), new OA\Property(property: 'links', ref: '#/components/schemas/PaginationLinks'), new OA\Property(property: 'meta', ref: '#/components/schemas/PaginationMeta')], type: 'object')),
             new OA\Response(response: 400, ref: '#/components/responses/BadRequestError'),
             new OA\Response(ref: '#/components/responses/UnauthorizedError', response: 401),
             new OA\Response(ref: '#/components/responses/NotFoundError', response: 404),

@@ -10,20 +10,22 @@ use OpenApi\Attributes as OA;
         'id',
         'warehouse',
         'product',
+        'order_id',
         'type',
         'type_label',
         'quantity_change',
         'quantity_before',
         'quantity_after',
+        'comment',
         'created_at',
     ],
     properties: [
         new OA\Property(property: 'id', type: 'integer', example: 1),
-        new OA\Property(property: 'warehouse', properties: [
+        new OA\Property(property: 'warehouse', required: ['id', 'name'], properties: [
             new OA\Property(property: 'id', type: 'integer', example: 1),
             new OA\Property(property: 'name', type: 'string', example: 'Основной склад'),
         ], type: 'object'),
-        new OA\Property(property: 'product', properties: [
+        new OA\Property(property: 'product', required: ['id', 'name', 'sku'], properties: [
             new OA\Property(property: 'id', type: 'integer', example: 10),
             new OA\Property(property: 'name', type: 'string', example: 'Товар'),
             new OA\Property(property: 'sku', type: 'string', example: 'SKU-001'),
