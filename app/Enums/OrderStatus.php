@@ -21,7 +21,7 @@ enum OrderStatus: string implements HasColor, HasLabel
         };
     }
 
-    // Человекочитаемые названия статусов для UI или ответов API
+    // Human-readable labels for UI and API responses.
     public function label(): string
     {
         return match ($this) {

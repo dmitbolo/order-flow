@@ -24,7 +24,7 @@ class OrderFactory extends Factory
             'user_id' => User::factory(),
             'warehouse_id' => Warehouse::factory(),
             'status' => $this->faker->randomElement([OrderStatus::Pending, OrderStatus::Canceled, OrderStatus::Completed, OrderStatus::Processing]),
-            'total_amount' => 0, // Сумму будем пересчитывать на основе связанных OrderItem
+            'total_amount' => 0, // Recalculated from related order items.
             'notes' => $this->faker->optional()->sentence(),
         ];
     }

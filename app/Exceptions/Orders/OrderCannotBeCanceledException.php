@@ -6,7 +6,7 @@ use App\Exceptions\AppException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Нельзя отменить заказ, который уже обработан или отменен
+ * An order can be canceled only while it is pending.
  */
 class OrderCannotBeCanceledException extends AppException
 {

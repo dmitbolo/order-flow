@@ -16,7 +16,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 class WarehouseProductController extends Controller
 {
     /**
-     * Получить список товаров конкретного склада.
+     * List products available at a specific warehouse.
      * URL: GET /api/v1/warehouses/1/products
      */
     #[OA\Get(

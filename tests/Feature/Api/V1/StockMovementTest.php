@@ -18,7 +18,6 @@ test('an authenticated user can only filter their own stock movements', function
     $user = User::factory()->create();
     $warehouse = Warehouse::factory()->create();
     $product = Product::factory()->create();
-    $anotherProduct = Product::factory()->create();
 
     $movement = StockMovement::create([
         'warehouse_id' => $warehouse->id,
@@ -32,7 +31,7 @@ test('an authenticated user can only filter their own stock movements', function
 
     StockMovement::create([
         'warehouse_id' => $warehouse->id,
-        'product_id' => $anotherProduct->id,
+        'product_id' => $product->id,
         'actor_id' => User::factory()->create()->id,
         'type' => StockMovementType::InitialBalance,
         'quantity_change' => 4,

@@ -116,8 +116,7 @@ test('it fails when warehouse does not exist or is inactive', function () {
     $response = $this->actingAs($this->user)
         ->postJson('/api/v1/orders', $payload);
 
-    // Если склад inactive, экшен выбросит ModelNotFoundException,
-    // что Laravel автоматически превратит в HTTP 404
+    // An inactive warehouse is intentionally hidden behind a 404 response.
     $response->assertStatus(Response::HTTP_NOT_FOUND);
 });
 
@@ -249,7 +248,7 @@ test('it rolls back the entire transaction and keeps database intact if any item
     $this->assertDatabaseHas('warehouse_product', [
         'warehouse_id' => $this->warehouse->id,
         'product_id' => $this->product1->id,
-        'stock_quantity' => 10, // Осталось исходное количество
+        'stock_quantity' => 10, // The original quantity remains unchanged.
     ]);
 
     $this->assertDatabaseHas('warehouse_product', [

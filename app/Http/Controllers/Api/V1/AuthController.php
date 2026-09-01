@@ -38,7 +38,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Получить информацию о текущем авторизованном пользователе.
+     * Get the currently authenticated user.
      */
     #[OA\Get(
         path: '/me',
@@ -56,7 +56,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Выход из системы (отзыв текущего токена).
+     * Log out by revoking the current access token.
      */
     #[OA\Post(
         path: '/logout',

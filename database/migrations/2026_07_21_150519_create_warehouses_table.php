@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('warehouses', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // e.g. "Склад Москва-Север", "Склад Алматы"
-            $table->string('code')->unique(); // e.g. "MSK-NORTH", "ALA-MAIN"
+            $table->string('name');
+            $table->string('code')->unique();
             $table->string('address')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

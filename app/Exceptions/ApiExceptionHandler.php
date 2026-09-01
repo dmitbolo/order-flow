@@ -19,7 +19,7 @@ use Throwable;
 class ApiExceptionHandler
 {
     /**
-     * Регистрирует все кастомные обработчики для API.
+     * Register all custom API exception renderers.
      */
     public static function configure(Exceptions $exceptions): void
     {
