@@ -29,19 +29,15 @@ class CreateOrderAction
     {
         return DB::transaction(function () use ($user, $data, $actor) {
             /** @var Warehouse $warehouse */
-            $warehouse = Warehouse::where('is_active', true)->findOrFail($data->warehouseId);
+            $warehouse = Warehouse::query()
+                ->where('is_active', true)
+                ->sharedLock()
+                ->findOrFail($data->warehouseId);
 
             $quantities = $data->getItemsWithQuantities();
             $productIds = array_keys($quantities);
-            $unavailableProductId = Product::query()
-                ->whereIn('id', $productIds)
-                ->where('is_active', false)
-                ->orderBy('id')
-                ->value('id');
 
-            if ($unavailableProductId !== null) {
-                throw new ProductUnavailableException((int) $unavailableProductId);
-            }
+            $this->lockAvailableProducts($productIds);
 
             $quantityChanges = array_map(
                 static fn (int $quantity): int => -$quantity,
@@ -65,5 +61,26 @@ class CreateOrderAction
 
             return $order->load(['warehouse', 'items']);
         });
+    }
+
+    /**
+     * @param  list<int>  $productIds
+     */
+    private function lockAvailableProducts(array $productIds): void
+    {
+        $products = Product::query()
+            ->whereIn('id', $productIds)
+            ->orderBy('id')
+            ->sharedLock()
+            ->get(['id', 'is_active'])
+            ->keyBy('id');
+
+        foreach ($productIds as $productId) {
+            $product = $products->get($productId);
+
+            if (! $product?->is_active) {
+                throw new ProductUnavailableException($productId);
+            }
+        }
     }
 }
