@@ -124,8 +124,19 @@ test('it normalizes a non-positive per_page parameter to one', function () {
 });
 
 test('it rejects unallowed filters and sorts', function () {
-    $this->actingAs($this->user)->getJson('/api/v1/orders?filter[user_id]=1')->assertBadRequest();
-    $this->actingAs($this->user)->getJson('/api/v1/orders?sort=user_id')->assertBadRequest();
+    $this->actingAs($this->user)
+        ->getJson('/api/v1/orders?filter[user_id]=1')
+        ->assertBadRequest()
+        ->assertJsonPath('status', 'error')
+        ->assertJsonPath('error_code', 'INVALID_QUERY_PARAMETER')
+        ->assertJsonStructure(['status', 'error_code', 'message']);
+
+    $this->actingAs($this->user)
+        ->getJson('/api/v1/orders?sort=user_id')
+        ->assertBadRequest()
+        ->assertJsonPath('status', 'error')
+        ->assertJsonPath('error_code', 'INVALID_QUERY_PARAMETER')
+        ->assertJsonStructure(['status', 'error_code', 'message']);
 });
 
 test('it loads allowed includes for a single order', function () {
@@ -149,7 +160,11 @@ test('it returns 400 when trying to include an unallowed relation', function () 
     $response = $this->actingAs($this->user)
         ->getJson("/api/v1/orders/{$this->pendingOrder->id}?include=unallowedRelation");
 
-    $response->assertStatus(Response::HTTP_BAD_REQUEST);
+    $response
+        ->assertStatus(Response::HTTP_BAD_REQUEST)
+        ->assertJsonPath('status', 'error')
+        ->assertJsonPath('error_code', 'INVALID_QUERY_PARAMETER')
+        ->assertJsonStructure(['status', 'error_code', 'message']);
 });
 
 test('it returns 404 when trying to view another users order', function () {

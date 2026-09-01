@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Spatie\QueryBuilder\Exceptions\InvalidQuery;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -26,6 +27,7 @@ class ApiExceptionHandler
 
         self::registerNotFoundHandler($exceptions);
         self::registerValidationHandler($exceptions);
+        self::registerInvalidQueryHandler($exceptions);
         self::registerAuthHandlers($exceptions);
         self::registerAppExceptionHandler($exceptions);
         self::registerFallbackHandler($exceptions);
@@ -67,6 +69,21 @@ class ApiExceptionHandler
                 'message' => 'Переданные данные не прошли валидацию.',
                 'errors' => $e->errors(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        });
+    }
+
+    private static function registerInvalidQueryHandler(Exceptions $exceptions): void
+    {
+        $exceptions->render(function (InvalidQuery $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'error_code' => 'INVALID_QUERY_PARAMETER',
+                'message' => $e->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
         });
     }
 
